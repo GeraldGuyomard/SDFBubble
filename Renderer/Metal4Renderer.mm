@@ -14,6 +14,7 @@ A platform-independent Metal renderer implementation that sets up the app's
 #import "Metal4Renderer.h"
 #import "TGAImage.h"
 
+#include <algorithm>
 
 // The shader types header that defines the input data types for the app's shaders.
 // The types define a common data format for both
@@ -261,17 +262,25 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
 - (void) createBuffers
 {
-    const float w = float(viewportSize.x) * 0.5f;
-    const float h = float(viewportSize.y) * 0.5f;
+    const float2 contentSize { float(offscreenTexture.width), float(offscreenTexture.height) };
+    const float contentAspectRatio = contentSize.x / contentSize.y;
+    
+    const float2 vSize { float(viewportSize.x), float(viewportSize.y) };
+    const float vAspectRatio = vSize.x / vSize.y;
+    
+    const float r = vAspectRatio / contentAspectRatio;
+    
+    const float w = vSize.x * 0.5f;
+    const float h = vSize.y * 0.5f * r;
     
     const VertexData triangleVertexData[] =
     {
-        { {  w,   -h },  { 1.f, 1.f } },
-        { { -w,   -h },  { 0.f, 1.f } },
+        { {  w,  -h },  { 1.f, 1.f } },
+        { { -w,  -h },  { 0.f, 1.f } },
         { { -w,  h },  { 0.f, 0.f } },
 
         // The 2nd triangle of the rectangle for the composite color texture.
-        { {  w,   -h },  { 1.f, 1.f } },
+        { {  w,  -h },  { 1.f, 1.f } },
         { { -w,  h },  { 0.f, 0.f } },
         { {  w,  h },  { 1.f, 0.f } },
 
@@ -421,8 +430,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     defaultLibrary = [device newDefaultLibrary];
 
     // Create the app's resources.
-    [self createBuffers];
     [self createTextures];
+    [self createBuffers];
 
     // Create the types that manage the resources.
     [self createArgumentTable];
