@@ -112,16 +112,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     /// The app build a color image by combines this texture with
     /// `chyronTexture`, which becomes the input texture for the grayscale conversion.
     id<MTLTexture> backgroundImageTexture;
-
-    /// A texture that stores the a color copy of the background image and the chyron image.
-    ///
-    /// This is the input  texture for the compute pass that runs the `convertToGrayscale` kernel.
-    id<MTLTexture> compositeColorTexture;
-
-    /// A texture that stores the a color copy of the background image and the chyron image.
-    ///
-    /// This is the output  texture for the compute pass that runs the `convertToGrayscale` kernel.
-    id<MTLTexture> compositeGrayscaleTexture;
+    
+    id<MTLTexture> srcOffscreenTexture;
+    id<MTLTexture> dstOffscreenTexture;
 
     /// A two-dimensional size that represents the number of threads for each
     /// grid dimension of a threadgroup for a compute kernel dispatch.
@@ -335,17 +328,17 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Configure the input texture to read-only because `convertToGrayscale` kernel
     // doesn't modify it.
     textureDescriptor.usage = MTLTextureUsageShaderRead;
-    compositeColorTexture = [device newTextureWithDescriptor:textureDescriptor];
+    srcOffscreenTexture = [device newTextureWithDescriptor:textureDescriptor];
 
-    NSAssert(nil != compositeColorTexture,
+    NSAssert(nil != srcOffscreenTexture,
              @"The device can't create a texture for the composite color image.");
 
     // Configure the output texture to read and write because the
     // `convertToGrayscale` kernel needs to sample and modify it.
     textureDescriptor.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead ;
-    compositeGrayscaleTexture = [device newTextureWithDescriptor:textureDescriptor];
+    dstOffscreenTexture = [device newTextureWithDescriptor:textureDescriptor];
 
-    NSAssert(nil != compositeGrayscaleTexture,
+    NSAssert(nil != dstOffscreenTexture,
              @"The device can't create a texture for the composite grayscale image.");
 }
 
@@ -355,17 +348,17 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 /// entire image.
 - (void) configureThreadgroupForComputePasses
 {
-    NSAssert(compositeColorTexture, @"Create the composite color texture before configuring the threadgroup");
+    NSAssert(srcOffscreenTexture, @"Create the composite color texture before configuring the threadgroup");
 
     // Set the compute kernel's threadgroup size to 16 x 16.
     threadgroupSize = MTLSizeMake(16, 16, 1);
 
     // Find the number of threadgroup widths the app needs to span the texture's full width.
-    threadgroupCount.width  = compositeColorTexture.width  + threadgroupSize.width -  1;
+    threadgroupCount.width  = srcOffscreenTexture.width  + threadgroupSize.width -  1;
     threadgroupCount.width /= threadgroupSize.width;
 
     // Find the number of threadgroup heights the app needs to span the texture's full width.
-    threadgroupCount.height = compositeColorTexture.height + threadgroupSize.height - 1;
+    threadgroupCount.height = srcOffscreenTexture.height + threadgroupSize.height - 1;
     threadgroupCount.height /= threadgroupSize.height;
 
     // Set depth to one because the image data is two-dimensional.
@@ -418,8 +411,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     // Add the communal resources to the residency set.
     [residencySet addAllocation:backgroundImageTexture];
-    [residencySet addAllocation:compositeColorTexture];
-    [residencySet addAllocation:compositeGrayscaleTexture];
+    [residencySet addAllocation:srcOffscreenTexture];
+    [residencySet addAllocation:dstOffscreenTexture];
     [residencySet addAllocation:vertexDataBuffer];
     [residencySet addAllocation:viewportSizeBuffer];
     [residencySet commit];
@@ -499,7 +492,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [computeEncoder setArgumentTable:argumentTable];
 
     // Bind the composite color (input) texture in the argument table.
-    [argumentTable setTexture:compositeGrayscaleTexture.gpuResourceID
+    [argumentTable setTexture:dstOffscreenTexture.gpuResourceID
                       atIndex:ComputeTextureBindingIndexForColorImage];
 
     // Run the dispatch with the pipeline state and current state of the argument table.
@@ -524,7 +517,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                         sourceLevel:0
                        sourceOrigin:zeroOrigin
                          sourceSize:backgroundImageSize
-                          toTexture:compositeColorTexture
+                          toTexture:srcOffscreenTexture
                    destinationSlice:0
                    destinationLevel:0
                   destinationOrigin:destinationOrigin];
@@ -595,7 +588,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                       atIndex:BufferBindingIndexForViewportSize];
 
     // Bind the color composite texture.
-    [argumentTable setTexture:compositeColorTexture.gpuResourceID
+    [argumentTable setTexture:srcOffscreenTexture.gpuResourceID
                       atIndex:RenderTextureBindingIndex];
 
     // Draw the first rectangle with the color composite texture.
@@ -606,7 +599,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                       vertexCount:rectangleVertexCount];
 
     // Bind the grayscale composite texture.
-    [argumentTable setTexture:compositeGrayscaleTexture.gpuResourceID
+    [argumentTable setTexture:dstOffscreenTexture.gpuResourceID
                       atIndex:RenderTextureBindingIndex];
 
     // Draw the first rectangle with the grayscale composite texture.
