@@ -73,8 +73,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     ///
     /// The app compiles the pipeline with the compute kernel in the
     /// `AAPLShaders.metal` source code file.
-    id<MTLComputePipelineState> computePipelineState;
-    id<MTLComputePipelineState> clearCompositeColorPipelineState;
     id<MTLComputePipelineState> drawSDFPipelineState;
     
     /// A render pipeline the app creates at runtime.
@@ -114,12 +112,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     /// The app build a color image by combines this texture with
     /// `chyronTexture`, which becomes the input texture for the grayscale conversion.
     id<MTLTexture> backgroundImageTexture;
-
-    /// A texture that stores the original chyron image.
-    ///
-    /// The app build a color image by combines this texture with
-    /// `backgroundImageTexture`, which becomes the input texture for the grayscale conversion.
-    id<MTLTexture> chyronTexture;
 
     /// A texture that stores the a color copy of the background image and the chyron image.
     ///
@@ -320,7 +312,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 /// Loads two textures the app combines into the source color texture.
 - (void) createTextures
 {
-    NSString *chyronImageFileName = @"Aloha-chyron";
     NSString *backgroundImageFileName = @"Hawaii-coastline";
     // Create a texture from the background image file.
     NSURL *backgroundImageFile = [[NSBundle mainBundle]
@@ -331,16 +322,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
              @"The app can't create a texture for the background image: %@",
              backgroundImageFileName);
 
-    // Create a texture from the chyron image file.
-    NSURL *chyronImageFile = [[NSBundle mainBundle]
-                              URLForResource:chyronImageFileName
-                              withExtension:@"tga"];
-    chyronTexture = [self loadImageToTexture:chyronImageFile];
-
-    NSAssert(nil != chyronTexture,
-             @"The app can't create a texture for the chyron image: %@",
-             chyronImageFileName);
-
     // Create the source color texture that stores the combined texture data.
     MTLTextureDescriptor *textureDescriptor = [[MTLTextureDescriptor alloc] init];
     textureDescriptor.textureType = MTLTextureType2D;
@@ -349,7 +330,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Each is an 8-bit, unnormalized value; `0` maps to `0.0` and `255` maps to `1.0`.
     textureDescriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
     textureDescriptor.width = backgroundImageTexture.width;
-    textureDescriptor.height = backgroundImageTexture.height + chyronTexture.height;
+    textureDescriptor.height = backgroundImageTexture.height;
 
     // Configure the input texture to read-only because `convertToGrayscale` kernel
     // doesn't modify it.
@@ -437,7 +418,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     // Add the communal resources to the residency set.
     [residencySet addAllocation:backgroundImageTexture];
-    [residencySet addAllocation:chyronTexture];
     [residencySet addAllocation:compositeColorTexture];
     [residencySet addAllocation:compositeGrayscaleTexture];
     [residencySet addAllocation:vertexDataBuffer];
@@ -483,8 +463,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Create the compute pipeline.
     [self createCompiler];
     
-    computePipelineState = [self createComputePipelineStateWithFunctionName:@"convertToGrayscale"];
-    clearCompositeColorPipelineState = [self createComputePipelineStateWithFunctionName:@"clearTexture"];
     drawSDFPipelineState = [self createComputePipelineStateWithFunctionName:@"sdfDiskTexture"];
     
     [self configureThreadgroupForComputePasses];
@@ -513,22 +491,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [self updateViewportSizeBuffer];
 }
 
-- (void)clearCompositeColorTexture:(id<MTL4ComputeCommandEncoder>)computeEncoder
-{
-    [computeEncoder setComputePipelineState:clearCompositeColorPipelineState];
-    
-    // Configure the encoder's argument table for the dispatch call.
-    [computeEncoder setArgumentTable:argumentTable];
-
-    // Bind the composite color (input) texture in the argument table.
-    [argumentTable setTexture:compositeColorTexture.gpuResourceID
-                      atIndex:ComputeTextureBindingIndexForColorImage];
-
-    // Run the dispatch with the pipeline state and current state of the argument table.
-    [computeEncoder dispatchThreadgroups:threadgroupCount
-                   threadsPerThreadgroup:threadgroupSize];
-}
-
 - (void)drawSDFDisk:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
     [computeEncoder setComputePipelineState:drawSDFPipelineState];
@@ -545,40 +507,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                    threadsPerThreadgroup:threadgroupSize];
 }
 
-
-- (void)encodeChyronTextureCopy:(id<MTL4ComputeCommandEncoder>)computeEncoder
-{
-    // Configure the copy command to use the entire chyron texture.
-    MTLSize chyronTextureSize;
-    chyronTextureSize.width = chyronTexture.width;
-    chyronTextureSize.height = chyronTexture.height;
-    chyronTextureSize.depth = 1;
-
-    static NSUInteger offset = 0;
-    static bool rightWard = true;
-
-    // Set the chyron destination to the top of the color texture.
-    MTLOrigin destinationOrigin = zeroOrigin;
-    destinationOrigin.x = offset;
-
-    const NSUInteger emptySpace = compositeColorTexture.width - chyronTexture.width;
-    offset += rightWard ? 1 : -1;
-
-    if (offset == 0 || offset == emptySpace)
-        rightWard = !rightWard;
-
-    // Encode a command that copies the chyron texture onto the color texture.
-    [computeEncoder copyFromTexture:chyronTexture
-                        sourceSlice:0
-                        sourceLevel:0
-                       sourceOrigin:zeroOrigin
-                         sourceSize:chyronTextureSize
-                          toTexture:compositeColorTexture
-                   destinationSlice:0
-                   destinationLevel:0
-                  destinationOrigin:destinationOrigin];
-}
-
 - (void)encodeBackgroundTextureCopy:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
     // Configure the next copy command to use the entire background texture.
@@ -589,7 +517,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     // Copy the background image below the chyron.
     MTLOrigin destinationOrigin = zeroOrigin;
-    destinationOrigin.y = chyronTexture.height;
 
     // Encode a command that copies the background texture onto the color texture.
     [computeEncoder copyFromTexture:backgroundImageTexture
@@ -601,28 +528,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                    destinationSlice:0
                    destinationLevel:0
                   destinationOrigin:destinationOrigin];
-}
-
-- (void)encodeGrayscaleDispatchCommand:(id<MTL4ComputeCommandEncoder>)computeEncoder
-{
-    // Configure the encoder's pipeline state for the dispatch call.
-    [computeEncoder setComputePipelineState:computePipelineState];
-
-    // Configure the encoder's argument table for the dispatch call.
-    [computeEncoder setArgumentTable:argumentTable];
-
-    // Bind the composite color (input) texture in the argument table.
-    [argumentTable setTexture:compositeColorTexture.gpuResourceID
-                      atIndex:ComputeTextureBindingIndexForColorImage];
-
-    // Bind the composite grayscale (output) texture in the argument table.
-    [argumentTable setTexture:compositeGrayscaleTexture.gpuResourceID
-                      atIndex:ComputeTextureBindingIndexForGrayscaleImage];
-
-    // Run the dispatch with the pipeline state and current state of the argument table.
-    [computeEncoder dispatchThreadgroups:threadgroupCount
-                   threadsPerThreadgroup:threadgroupSize];
-
 }
 
 /// Adds two copy commands and a dispatch command to the compute pass.
@@ -643,11 +548,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 /// the method encodes an intrapass barrier that enforces that ordering.
 - (void)encodeComputePassWithEncoder:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
-    [self clearCompositeColorTexture:computeEncoder];
-    
-    // Copy the chyron texture to the color composite texture.
-    [self encodeChyronTextureCopy:computeEncoder];
-
     // Copy the background image texture to the color composite texture.
     [self encodeBackgroundTextureCopy:computeEncoder];
 
@@ -657,9 +557,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                           beforeEncoderStages:MTLStageDispatch
                             visibilityOptions:MTL4VisibilityOptionDevice];
 
-    // Create a texture that's the grayscale equivalent of the color composite texture.
-    [self encodeGrayscaleDispatchCommand:computeEncoder];
-    
     [self drawSDFDisk:computeEncoder];
 }
 

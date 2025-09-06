@@ -76,61 +76,6 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     return (simd_float4)(colorSample);
 }
 
-/// The ITU-R recommendation 709 luma coefficients.
-///
-/// The `convertToGrayscale` kernel calculates a color pixel's grayscale
-/// equivalent value from the cross product of these values with the pixel's
-/// color red, green, and blue color components.
-constant half3 kRec709LumaCoefficients = half3(0.2126, 0.7152, 0.0722);
-
-/// Converts a color texture to its grayscale equivalent.
-///
-/// The compute kernel applies the luma coefficients from the 709 standard.
-kernel void
-convertToGrayscale(texture2d<half, access::read>  inTexture  [[texture(ComputeTextureBindingIndexForColorImage)]],
-                   texture2d<half, access::write> outTexture [[texture(ComputeTextureBindingIndexForGrayscaleImage)]],
-                   uint2                          gridId     [[thread_position_in_grid]])
-{
-
-    // Check that that this part of the grid is within the texture's bounds.
-    if ((gridId.x >= outTexture.get_width()) ||
-        (gridId.y >= outTexture.get_height()))
-    {
-        // Exit early for coordinates outside the bounds of the destination.
-        return;
-    }
-
-    /// The input texture's data value at the thread's coordinates.
-    half4 colorValue  = inTexture.read(gridId);
-
-    /// A grayscale equivalent of the input texture's color value.
-    half grayValue = dot(colorValue.rgb, kRec709LumaCoefficients);
-
-    // Save the grayscale value to the output texture's at the thread's coordinates.
-    outTexture.write(half4(grayValue, grayValue, grayValue, 1.0), gridId);
-}
-
-kernel void
-clearTexture(texture2d<half, access::read_write>  texture  [[texture(ComputeTextureBindingIndexForColorImage)]],
-                   uint2                          gridId     [[thread_position_in_grid]])
-{
-
-    // Check that that this part of the grid is within the texture's bounds.
-    if ((gridId.x >= texture.get_width()) ||
-        (gridId.y >= texture.get_height()))
-    {
-        // Exit early for coordinates outside the bounds of the destination.
-        return;
-    }
-
-    const float r = float(gridId.x) / float(texture.get_width());
-  
-    half4 out { half(r), 0.f, 0.f, 1.f };
-
-    // Save the grayscale value to the output texture's at the thread's coordinates.
-    texture.write(out, gridId);
-}
-
 float evaluateSDF(float2 pt, float2 size)
 {
     constexpr float kRadius = 200.f;

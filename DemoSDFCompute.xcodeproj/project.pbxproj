@@ -23,8 +23,6 @@
 		3AF7EA0C1EB64A46003BB06D /* Metal4Renderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */; };
 		3AF7EA101EB64A46003BB06D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9C11EB64A46003BB06D /* Shaders.metal */; };
 		3AF7EA121EB64A46003BB06D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9C11EB64A46003BB06D /* Shaders.metal */; };
-		EBC87E842DD429160029F8FA /* Aloha-chyron.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E822DD429160029F8FA /* Aloha-chyron.tga */; };
-		EBC87E852DD429160029F8FA /* Aloha-chyron.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E822DD429160029F8FA /* Aloha-chyron.tga */; };
 		EBC87E872DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */; };
 		EBC87E892DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */; };
 /* End PBXBuildFile section */
@@ -54,7 +52,6 @@
 		3AF7E9C81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AF7E9F81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66DD56C898453906829F0E1 /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
-		EBC87E822DD429160029F8FA /* Aloha-chyron.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Aloha-chyron.tga"; sourceTree = "<group>"; };
 		EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Hawaii-coastline.tga"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -185,7 +182,6 @@
 		EBC87E812DD426F70029F8FA /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				EBC87E822DD429160029F8FA /* Aloha-chyron.tga */,
 				EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */,
 			);
 			path = Assets;
@@ -275,7 +271,6 @@
 			files = (
 				3A1E2DFF1F71B23900A7B165 /* Main.storyboard in Resources */,
 				3A1E2DFE1F71B23900A7B165 /* LaunchScreen.storyboard in Resources */,
-				EBC87E852DD429160029F8FA /* Aloha-chyron.tga in Resources */,
 				EBC87E872DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -285,7 +280,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3A1E2E081F71B25900A7B165 /* Main.storyboard in Resources */,
-				EBC87E842DD429160029F8FA /* Aloha-chyron.tga in Resources */,
 				EBC87E892DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

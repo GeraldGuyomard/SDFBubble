@@ -45,9 +45,6 @@ typedef enum TextureBindingIndex
     /// An index of a color texture for a compute kernel in a compute pass.
     ComputeTextureBindingIndexForColorImage = 0,
 
-    /// An index of a grayscale texture for a compute kernel in a compute pass.
-    ComputeTextureBindingIndexForGrayscaleImage = 1,
-
     /// An index of a texture for a fragment shader in a render pass.
     RenderTextureBindingIndex = 0,
 } TextureBindingIndex;
