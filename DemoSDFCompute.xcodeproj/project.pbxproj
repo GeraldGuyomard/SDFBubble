@@ -19,8 +19,8 @@
 		3A5588EA1F71B8C3005AF3CF /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3A5588DE1F71B8B8005AF3CF /* AppDelegate.m */; };
 		3ABBACE71F7314FF0080C72C /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3ABBACE51F7314B10080C72C /* MetalKit.framework */; };
 		3ABBACEB1F7315460080C72C /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3ABBACEA1F7315370080C72C /* MetalKit.framework */; };
-		3AF7EA0A1EB64A46003BB06D /* Metal4Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.m */; };
-		3AF7EA0C1EB64A46003BB06D /* Metal4Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.m */; };
+		3AF7EA0A1EB64A46003BB06D /* Metal4Renderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */; };
+		3AF7EA0C1EB64A46003BB06D /* Metal4Renderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */; };
 		3AF7EA101EB64A46003BB06D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9C11EB64A46003BB06D /* Shaders.metal */; };
 		3AF7EA121EB64A46003BB06D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9C11EB64A46003BB06D /* Shaders.metal */; };
 		EBC87E842DD429160029F8FA /* Aloha-chyron.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E822DD429160029F8FA /* Aloha-chyron.tga */; };
@@ -48,7 +48,7 @@
 		3ABBACEA1F7315370080C72C /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.0.sdk/System/Library/Frameworks/MetalKit.framework; sourceTree = DEVELOPER_DIR; };
 		3AC448961EC12A93006F9D6B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3AF7E9BE1EB64A46003BB06D /* Metal4Renderer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Metal4Renderer.h; sourceTree = "<group>"; };
-		3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Metal4Renderer.m; sourceTree = "<group>"; };
+		3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Metal4Renderer.mm; sourceTree = "<group>"; };
 		3AF7E9C01EB64A46003BB06D /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
 		3AF7E9C11EB64A46003BB06D /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		3AF7E9C81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -139,7 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				3AF7E9BE1EB64A46003BB06D /* Metal4Renderer.h */,
-				3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.m */,
+				3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */,
 				3AF7E9C01EB64A46003BB06D /* ShaderTypes.h */,
 				3AF7E9C11EB64A46003BB06D /* Shaders.metal */,
 				EB2678222DF11C6D00A96775 /* Utility */,
@@ -298,7 +298,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3A5588E71F71B8BE005AF3CF /* ViewController.m in Sources */,
-				3AF7EA0A1EB64A46003BB06D /* Metal4Renderer.m in Sources */,
+				3AF7EA0A1EB64A46003BB06D /* Metal4Renderer.mm in Sources */,
 				3AF7EA101EB64A46003BB06D /* Shaders.metal in Sources */,
 				3A5588E41F71B8BB005AF3CF /* main.m in Sources */,
 				3A5588EA1F71B8C3005AF3CF /* AppDelegate.m in Sources */,
@@ -314,7 +314,7 @@
 				3AF7EA121EB64A46003BB06D /* Shaders.metal in Sources */,
 				3A30EDFE1EB698AD00B4FC0B /* TGAImage.m in Sources */,
 				3A5588E51F71B8BB005AF3CF /* main.m in Sources */,
-				3AF7EA0C1EB64A46003BB06D /* Metal4Renderer.m in Sources */,
+				3AF7EA0C1EB64A46003BB06D /* Metal4Renderer.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
