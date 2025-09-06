@@ -38,16 +38,6 @@ static const VertexData triangleVertexData[] =
     { {  480,   40 },  { 1.f, 1.f } },
     { { -480,  720 },  { 0.f, 0.f } },
     { {  480,  720 },  { 1.f, 0.f } },
-
-    // The 1st triangle of the rectangle for the composite grayscale texture.
-    { {  480, -720 },  { 1.f, 1.f } },
-    { { -480, -720 },  { 0.f, 1.f } },
-    { { -480,  -40 },  { 0.f, 0.f } },
-
-    // The 2nd triangle of the rectangle for the composite grayscale texture.
-    { {  480, -720 },  { 1.f, 1.f } },
-    { { -480,  -40 },  { 0.f, 0.f } },
-    { {  480,  -40 },  { 1.f, 0.f } },
 };
 
 static const MTLOrigin zeroOrigin = { 0, 0, 0 };
@@ -586,16 +576,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     const NSUInteger rectangleVertexCount = 6;
     [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
                       vertexStart:firstRectangleOffset
-                      vertexCount:rectangleVertexCount];
-
-    // Bind the grayscale composite texture.
-    [argumentTable setTexture:offscreenTexture.gpuResourceID
-                      atIndex:RenderTextureBindingIndex];
-
-    // Draw the first rectangle with the grayscale composite texture.
-    const NSUInteger secondRectangleOffset = 6;
-    [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
-                      vertexStart:secondRectangleOffset
                       vertexCount:rectangleVertexCount];
 }
 
