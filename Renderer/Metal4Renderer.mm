@@ -21,24 +21,7 @@ A platform-independent Metal renderer implementation that sets up the app's
 // and the code in this file, which sets up input data with Metal API on the CPU.
 #import "ShaderTypes.h"
 
-/// An array of tuples that store the position and texture coordinates for each vertex.
-///
-/// The array stores the data for four triangles.
-/// The initial two triangles make a rectangle for the composite color texture.
-/// The final two triangles make a rectangle for the composite grayscale texture.
-///
-static const VertexData triangleVertexData[] =
-{
-    // The 1st triangle of the rectangle for the composite color texture.
-    { {  480,   40 },  { 1.f, 1.f } },
-    { { -480,   40 },  { 0.f, 1.f } },
-    { { -480,  720 },  { 0.f, 0.f } },
-
-    // The 2nd triangle of the rectangle for the composite color texture.
-    { {  480,   40 },  { 1.f, 1.f } },
-    { { -480,  720 },  { 0.f, 0.f } },
-    { {  480,  720 },  { 1.f, 0.f } },
-};
+using namespace simd;
 
 static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
@@ -278,6 +261,22 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
 - (void) createBuffers
 {
+    const float w = float(viewportSize.x) * 0.5f;
+    const float h = float(viewportSize.y) * 0.5f;
+    
+    const VertexData triangleVertexData[] =
+    {
+        { {  w,   -h },  { 1.f, 1.f } },
+        { { -w,   -h },  { 0.f, 1.f } },
+        { { -w,  h },  { 0.f, 0.f } },
+
+        // The 2nd triangle of the rectangle for the composite color texture.
+        { {  w,   -h },  { 1.f, 1.f } },
+        { { -w,  h },  { 0.f, 0.f } },
+        { {  w,  h },  { 1.f, 0.f } },
+
+    };
+    
     // Create the buffer that stores the vertex data.
     vertexDataBuffer = [device newBufferWithLength:sizeof(triangleVertexData)
                                              options:MTLResourceStorageModeShared];
