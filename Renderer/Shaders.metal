@@ -36,7 +36,7 @@ struct RasterizerData
 vertex RasterizerData
 vertexShader(uint                   vertexID              [[ vertex_id ]],
              constant VertexData    *vertexArray          [[ buffer(BufferBindingIndexForVertexData) ]],
-             constant simd_uint2    *viewportSizePointer  [[ buffer(BufferBindingIndexForViewportSize) ]])
+             constant Uniforms    *uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
 
 {
     /// The vertex shader's return value.
@@ -46,7 +46,7 @@ vertexShader(uint                   vertexID              [[ vertex_id ]],
     simd_float2 pixelSpacePosition = vertexArray[vertexID].position.xy;
 
     // Retrieve the viewport's size by casting it to a 2D float value.
-    simd_float2 viewportSize = simd_float2(*viewportSizePointer);
+    simd_float2 viewportSize = uniforms->viewportSize;
 
     // Convert the position in pixel coordinates to clip-space by dividing the
     // pixel's coordinates by half the size of the viewport.
@@ -76,19 +76,31 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     return (simd_float4)(colorSample);
 }
 
-float evaluateSDF(float2 pt, float2 size)
+bool evaluateBubble(Bubble bubble,
+                    float2 pt,
+                    uint2 gridId,
+                    texture2d<half, access::read_write> texture)
 {
-    constexpr float kRadius = 200.f;
+    const float d = bubble.evaluate(pt);
+    //const float d = evaluateSDF(pt, size);
+    if (d <= 0.f)
+    {
+        half4 c = texture.read(gridId);
+        
+        // inside
+        c += half4 { 0.1f, 0.1f, 0.1f, 0.f};
+
+        texture.write(c, gridId);
+        return true;
+    }
     
-    const float2 origin = size * 0.5f;
-    
-    const float d = length(pt - origin) - kRadius;
-    return d;
+    return false;
 }
 
 kernel void
-sdfDiskTexture(texture2d<half, access::read_write>  texture  [[texture(ComputeTextureBindingIndexForColorImage)]],
-                   uint2                          gridId     [[thread_position_in_grid]])
+computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeTextureBindingIndexForColorImage)]],
+                uint2 gridId     [[thread_position_in_grid]],
+               constant Uniforms* uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
 {
 
     // Check that that this part of the grid is within the texture's bounds.
@@ -100,18 +112,12 @@ sdfDiskTexture(texture2d<half, access::read_write>  texture  [[texture(ComputeTe
     }
 
     const float2 pt { float(gridId.x), float(gridId.y) };
-    const float2 size { float(texture.get_width()), float(texture.get_height()) };
     
-    const float d = evaluateSDF(pt, size);
-    if (d <= 0.f)
+    for (size_t i=0; i < uniforms->nbBubbles; ++i)
     {
-        half4 c = texture.read(gridId);
-        
-        // inside
-        /// A grayscale equivalent of the input texture's color value.
-        c += half4 { 0.1f, 0.1f, 0.1f, 0.f};
-
-        // Save the grayscale value to the output texture's at the thread's coordinates.
-        texture.write(c, gridId);
+        if (evaluateBubble(uniforms->bubbles[i], pt, gridId, texture))
+        {
+            break;
+        }
     }
 }

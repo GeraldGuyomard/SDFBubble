@@ -15,6 +15,7 @@ A platform-independent Metal renderer implementation that sets up the app's
 #import "TGAImage.h"
 
 #include <algorithm>
+#include <vector>
 
 // The shader types header that defines the input data types for the app's shaders.
 // The types define a common data format for both
@@ -104,12 +105,14 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     /// The current size of the view, which the app sends as an input to the
     /// vertex shader.
-    simd_uint2 viewportSize;
+    simd_float2 viewportSize;
 
     /// A buffer that stores the viewport's size data.
     ///
-    /// This acts as a GPU-visible container for the value in ``viewportSize``.
-    id<MTLBuffer> viewportSizeBuffer;
+    id<MTLBuffer> uniformsBuffer;
+    
+    std::vector<Bubble> _bubbles;
+    
 }
 
 /// Creates a texture instance from an image file.
@@ -293,10 +296,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     memcpy(vertexDataBuffer.contents, triangleVertexData, sizeof(triangleVertexData));
 
     // Create the buffer that stores the app's viewport data.
-    viewportSizeBuffer = [device newBufferWithLength:sizeof(viewportSize)
-                                             options:MTLResourceStorageModeShared];
+    uniformsBuffer = [device newBufferWithLength:sizeof(Uniforms) options:MTLResourceStorageModeShared];
 
-    [self updateViewportSizeBuffer];
+    [self updateUniformsBuffer];
 }
 
 /// Loads two textures the app combines into the source color texture.
@@ -402,7 +404,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [residencySet addAllocation:backgroundImageTexture];
     [residencySet addAllocation:offscreenTexture];
     [residencySet addAllocation:vertexDataBuffer];
-    [residencySet addAllocation:viewportSizeBuffer];
+    [residencySet addAllocation:uniformsBuffer];
     [residencySet commit];
     
     // Create per-frame allocators and residency sets.
@@ -422,7 +424,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     frameNumber = 0;
     viewportSize.x = (simd_uint1)mtkView.drawableSize.width;
     viewportSize.y = (simd_uint1)mtkView.drawableSize.height;
-
+    
     device = mtkView.device;
     
     commandQueue = [device newMTL4CommandQueue];
@@ -431,6 +433,24 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     // Create the app's resources.
     [self createTextures];
+    
+    const float2 size { float(offscreenTexture.width), float(offscreenTexture.height) };
+    
+    _bubbles.push_back({
+        .origin =  size * 0.5f,
+        .radius = 200.f
+    });
+    
+    _bubbles.push_back({
+        .origin =  size * 0.75f,
+        .radius = 100.f
+    });
+    
+    _bubbles.push_back({
+        .origin =  size * 0.25f,
+        .radius = 150.f
+    });
+    
     [self createBuffers];
 
     // Create the types that manage the resources.
@@ -444,7 +464,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Create the compute pipeline.
     [self createCompiler];
     
-    drawSDFPipelineState = [self createComputePipelineStateWithFunctionName:@"sdfDiskTexture"];
+    drawSDFPipelineState = [self createComputePipelineStateWithFunctionName:@"computeAndDrawSDF"];
     
     [self configureThreadgroupForComputePasses];
 
@@ -457,8 +477,16 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     return self;
 }
 
-- (void) updateViewportSizeBuffer {
-    memcpy(viewportSizeBuffer.contents, &viewportSize, sizeof(viewportSize));
+- (void)updateUniformsBuffer
+{
+    auto buf = reinterpret_cast<Uniforms*>(uniformsBuffer.contents);
+    buf->viewportSize = viewportSize;
+    
+    buf->nbBubbles = _bubbles.size();
+    for (size_t i=0; i < buf->nbBubbles; ++i)
+    {
+        buf->bubbles[i] = _bubbles[i];
+    }
 }
 
 /// The system calls this method whenever the view changes orientation or size.
@@ -469,10 +497,10 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     viewportSize.x = (simd_uint1)size.width;
     viewportSize.y = (simd_uint1)size.height;
 
-    [self updateViewportSizeBuffer];
+    [self updateUniformsBuffer];
 }
 
-- (void)drawSDFDisk:(id<MTL4ComputeCommandEncoder>)computeEncoder
+- (void)drawSDFs:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
     [computeEncoder setComputePipelineState:drawSDFPipelineState];
     
@@ -483,6 +511,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [argumentTable setTexture:offscreenTexture.gpuResourceID
                       atIndex:ComputeTextureBindingIndexForColorImage];
 
+    [argumentTable setAddress:uniformsBuffer.gpuAddress
+                      atIndex:BufferBindingIndexForUniforms];
+    
     // Run the dispatch with the pipeline state and current state of the argument table.
     [computeEncoder dispatchThreadgroups:threadgroupCount
                    threadsPerThreadgroup:threadgroupSize];
@@ -538,7 +569,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                           beforeEncoderStages:MTLStageDispatch
                             visibilityOptions:MTL4VisibilityOptionDevice];
 
-    [self drawSDFDisk:computeEncoder];
+    [self drawSDFs:computeEncoder];
 }
 
 - (void)encodeRenderPassWithEncoder:(id<MTL4RenderCommandEncoder>)renderEncoder
@@ -572,8 +603,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                       atIndex:BufferBindingIndexForVertexData];
 
     // Bind the buffer with the viewport's size to the argument table.
-    [argumentTable setAddress:viewportSizeBuffer.gpuAddress
-                      atIndex:BufferBindingIndexForViewportSize];
+    [argumentTable setAddress:uniformsBuffer.gpuAddress
+                      atIndex:BufferBindingIndexForUniforms];
 
     // Bind the color composite texture.
     [argumentTable setTexture:offscreenTexture.gpuResourceID

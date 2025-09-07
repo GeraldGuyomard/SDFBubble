@@ -10,6 +10,14 @@ The types and enum constants the app shares with its Metal shaders and C/ObjC co
 
 #import <simd/simd.h>
 
+#if defined(__METAL_VERSION__)
+    #define SHADER_CONSTANT constant
+    using namespace metal;
+#else
+    #define SHADER_CONSTANT const
+    using namespace simd;
+#endif
+
 /// Defines the binding index values for passing buffer arguments to GPU function parameters.
 ///
 /// The binding values define an agreement between:
@@ -29,7 +37,7 @@ typedef enum BufferBindingIndex
     ///
     /// The vertex shader calculates the pixel coordinates of the triangle's vertices
     /// based on the size of the app's viewport.
-    BufferBindingIndexForViewportSize = 1,
+    BufferBindingIndexForUniforms = 1,
 } BufferBindingIndex;
 
 /// Defines the binding index values for passing texture arguments to GPU function parameters.
@@ -64,5 +72,24 @@ typedef struct VertexData
     /// The location within a 2D texture for a vertex.
     simd_float2 textureCoordinate;
 } VertexData;
+
+struct Bubble final
+{
+    simd_float2 origin;
+    float radius;
+    
+    float evaluate(float2 pt) const
+    {
+        const float d = length(pt - origin) - radius;
+        return d;
+    }
+};
+
+struct Uniforms final
+{
+    simd_float2 viewportSize;
+    size_t nbBubbles;
+    Bubble bubbles[1024];
+};
 
 #endif /* ShaderTypes_h */
