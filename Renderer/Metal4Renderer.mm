@@ -267,10 +267,10 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     const float2 s = vSize / contentSize;
     const float minS = std::min(s.x, s.y);
-    float2 rescaledContentSize = contentSize * minS;
-    const float2 offset = (vSize - rescaledContentSize) * 0.5f;
+    float rescaledContentSizeX = contentSize.x * minS;
+    const float offsetX = (vSize.x - rescaledContentSizeX) * 0.5f;
     
-    const float w = (vSize.x - offset.x) * 0.5f;
+    const float w = (vSize.x - offsetX) * 0.5f;
     const float h = w * contentSize.y / contentSize.x;
     
     const VertexData triangleVertexData[] =
