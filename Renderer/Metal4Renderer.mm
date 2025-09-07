@@ -111,6 +111,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     ///
     id<MTLBuffer> uniformsBuffer;
     
+    std::vector<BubbleGroup> _groups;
     std::vector<Bubble> _bubbles;
     
 }
@@ -416,6 +417,20 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     }
 }
 
+- (void) addGroupWithBubbleOrigin:(float2)origin radius:(float)radius
+{
+    _groups.push_back(BubbleGroup
+    {
+        .nbBubbles = 1,
+        .smoothFactor = 0.5f
+    });
+    
+    _bubbles.push_back({
+        .origin =  origin,
+        .radius = radius
+    });
+}
+
 - (nonnull instancetype)initWithView:(nonnull MTKView *)mtkView
 {
     self = [super init];
@@ -436,20 +451,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     const float2 size { float(offscreenTexture.width), float(offscreenTexture.height) };
     
-    _bubbles.push_back({
-        .origin =  size * 0.5f,
-        .radius = 200.f
-    });
-    
-    _bubbles.push_back({
-        .origin =  size * 0.75f,
-        .radius = 100.f
-    });
-    
-    _bubbles.push_back({
-        .origin =  size * 0.25f,
-        .radius = 150.f
-    });
+    [self addGroupWithBubbleOrigin:size * 0.5f radius:200.f];
+    [self addGroupWithBubbleOrigin:size * 0.75f radius:100.f];
+    [self addGroupWithBubbleOrigin:size * 0.25f radius:150.f];
     
     [self createBuffers];
 
@@ -482,8 +486,16 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     auto buf = reinterpret_cast<Uniforms*>(uniformsBuffer.contents);
     buf->viewportSize = viewportSize;
     
-    buf->nbBubbles = _bubbles.size();
-    for (size_t i=0; i < buf->nbBubbles; ++i)
+    const size_t nbGroups = _groups.size();
+    buf->nbBubbleGroups = nbGroups;
+    
+    for (size_t i=0; i < nbGroups; ++i)
+    {
+        buf->groups[i] = _groups[i];
+    }
+    
+    const size_t nbBubbles = _bubbles.size();
+    for (size_t i=0; i < nbBubbles; ++i)
     {
         buf->bubbles[i] = _bubbles[i];
     }

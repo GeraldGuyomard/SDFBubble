@@ -67,15 +67,15 @@ typedef struct VertexData
     ///
     /// For example, a value of `100` in either dimension means the vertex is
     /// 100 pixels from the origin in that dimension.
-    simd_float2 position;
+    float2 position;
 
     /// The location within a 2D texture for a vertex.
-    simd_float2 textureCoordinate;
+    float2 textureCoordinate;
 } VertexData;
 
 struct Bubble final
 {
-    simd_float2 origin;
+    float2 origin;
     float radius;
     
     float evaluate(float2 pt) const
@@ -85,10 +85,18 @@ struct Bubble final
     }
 };
 
+struct BubbleGroup final
+{
+    size_t nbBubbles;
+    float smoothFactor;
+};
+
 struct Uniforms final
 {
-    simd_float2 viewportSize;
-    size_t nbBubbles;
+    float2 viewportSize;
+    size_t nbBubbleGroups;
+    
+    BubbleGroup groups[1024];
     Bubble bubbles[1024];
 };
 

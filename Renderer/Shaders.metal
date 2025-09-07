@@ -97,6 +97,23 @@ bool evaluateBubble(Bubble bubble,
     return false;
 }
 
+bool evaluateBubbleGroup(constant BubbleGroup& group,
+                    constant Bubble* bubbles,
+                    float2 pt,
+                    uint2 gridId,
+                    texture2d<half, access::read_write> texture)
+{
+    if (group.nbBubbles == 1)
+    {
+        return evaluateBubble(*bubbles, pt, gridId, texture);
+    }
+    else
+    {
+        // blend
+        return false;
+    }
+}
+
 kernel void
 computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeTextureBindingIndexForColorImage)]],
                 uint2 gridId     [[thread_position_in_grid]],
@@ -112,12 +129,16 @@ computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeT
     }
 
     const float2 pt { float(gridId.x), float(gridId.y) };
+    constant Bubble* bubbles = &uniforms->bubbles[0];
     
-    for (size_t i=0; i < uniforms->nbBubbles; ++i)
+    for (size_t i=0; i < uniforms->nbBubbleGroups; ++i)
     {
-        if (evaluateBubble(uniforms->bubbles[i], pt, gridId, texture))
+        constant auto& group = uniforms->groups[i];
+        if (evaluateBubbleGroup(group, bubbles, pt, gridId, texture))
         {
             break;
         }
+        
+        bubbles += group.nbBubbles;
     }
 }
