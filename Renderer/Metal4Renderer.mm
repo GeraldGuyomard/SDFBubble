@@ -422,13 +422,24 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     _groups.push_back(BubbleGroup
     {
         .nbBubbles = 1,
-        .smoothFactor = 0.5f
+        .smoothFactor = 50.f
     });
     
     _bubbles.push_back({
         .origin =  origin,
         .radius = radius
     });
+}
+
+- (void) addGroupWithBubbles:(const std::vector<Bubble>&)bubbles
+{
+    _groups.push_back(BubbleGroup
+    {
+        .nbBubbles = bubbles.size(),
+        .smoothFactor = 10.f
+    });
+    
+    _bubbles.insert(_bubbles.end(), bubbles.begin(), bubbles.end());
 }
 
 - (nonnull instancetype)initWithView:(nonnull MTKView *)mtkView
@@ -455,6 +466,19 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [self addGroupWithBubbleOrigin:size * 0.75f radius:100.f];
     [self addGroupWithBubbleOrigin:size * 0.25f radius:150.f];
     
+    {
+        Bubble b1 {
+            .origin = float2 { size.x * 0.7f, size.y * 0.2f },
+            .radius = 100.f
+        };
+        
+        Bubble b2 {
+            .origin = b1.origin + float2{ 120.f, 120.f },
+            .radius = 80.f
+        };
+        
+        [self addGroupWithBubbles:{b1, b2}];
+    }
     [self createBuffers];
 
     // Create the types that manage the resources.

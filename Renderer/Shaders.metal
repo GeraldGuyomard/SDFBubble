@@ -76,13 +76,49 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     return (simd_float4)(colorSample);
 }
 
-bool evaluateBubble(Bubble bubble,
+float opUnion( float d1, float d2 )
+{
+    return min(d1,d2);
+}
+
+float opSmoothUnion( float d1, float d2, float k )
+{
+    k *= 4.0;
+    float h = max(k-abs(d1-d2),0.0);
+    return min(d1, d2) - h*h*0.25/k;
+}
+
+float computeSDF(Bubble bubble1, Bubble bubble2, float smoothFactor, float2 pt)
+{
+    return opSmoothUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt), smoothFactor);
+    //return opUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt));
+}
+
+bool evaluateBubbleGroup(constant BubbleGroup& group,
+                    constant Bubble* bubbles,
                     float2 pt,
                     uint2 gridId,
                     texture2d<half, access::read_write> texture)
 {
-    const float d = bubble.evaluate(pt);
-    //const float d = evaluateSDF(pt, size);
+    float d;
+    if (group.nbBubbles == 1)
+    {
+        const auto b = bubbles[0];
+        d = b.computeSDF(pt);
+    }
+    else if (group.nbBubbles == 2)
+    {
+        const auto b1 = bubbles[0];
+        const auto b2 = bubbles[1];
+        d = computeSDF(b1, b2, group.smoothFactor, pt);
+    }
+    else
+    {
+        // blend
+        return false;
+    }
+    
+    
     if (d <= 0.f)
     {
         half4 c = texture.read(gridId);
@@ -95,23 +131,6 @@ bool evaluateBubble(Bubble bubble,
     }
     
     return false;
-}
-
-bool evaluateBubbleGroup(constant BubbleGroup& group,
-                    constant Bubble* bubbles,
-                    float2 pt,
-                    uint2 gridId,
-                    texture2d<half, access::read_write> texture)
-{
-    if (group.nbBubbles == 1)
-    {
-        return evaluateBubble(*bubbles, pt, gridId, texture);
-    }
-    else
-    {
-        // blend
-        return false;
-    }
 }
 
 kernel void

@@ -78,7 +78,7 @@ struct Bubble final
     float2 origin;
     float radius;
     
-    float evaluate(float2 pt) const
+    float computeSDF(float2 pt) const
     {
         const float d = length(pt - origin) - radius;
         return d;
