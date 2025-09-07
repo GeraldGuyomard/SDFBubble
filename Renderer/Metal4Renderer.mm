@@ -263,15 +263,15 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 - (void) createBuffers
 {
     const float2 contentSize { float(offscreenTexture.width), float(offscreenTexture.height) };
-    const float contentAspectRatio = contentSize.x / contentSize.y;
-    
     const float2 vSize { float(viewportSize.x), float(viewportSize.y) };
-    const float vAspectRatio = vSize.x / vSize.y;
     
-    const float r = vAspectRatio / contentAspectRatio;
+    const float2 s = vSize / contentSize;
+    const float minS = std::min(s.x, s.y);
+    float2 rescaledContentSize = contentSize * minS;
+    const float2 offset = (vSize - rescaledContentSize) * 0.5f;
     
-    const float w = vSize.x * 0.5f;
-    const float h = vSize.y * 0.5f * r;
+    const float w = (vSize.x - offset.x) * 0.5f;
+    const float h = w * contentSize.y / contentSize.x;
     
     const VertexData triangleVertexData[] =
     {
