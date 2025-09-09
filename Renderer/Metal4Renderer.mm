@@ -10,6 +10,7 @@ A platform-independent Metal renderer implementation that sets up the app's
 #import <MetalKit/MetalKit.h>
 
 #import <Metal/MTL4RenderPass.h>
+#import "UIKit/UIKit.h"
 
 #import "Metal4Renderer.h"
 #import "TGAImage.h"
@@ -33,6 +34,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 /// A class that renders each of the app's video frames.
 @implementation Metal4Renderer
 {
+    UIView* view;
+    
     /// A Metal device the renderer draws with by sending commands to it.
     id<MTLDevice> device;
     
@@ -113,6 +116,10 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     id<MTLBuffer> uniformsBuffer;
     
     std::vector<Bubble> _bubbles;
+    Bubble* movingBubble;
+    float2 initialMovingBubbleOrigin;
+    
+    UIPanGestureRecognizer* panGestureRecognizer;
     
 }
 
@@ -426,6 +433,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     viewportSize.x = (simd_uint1)mtkView.drawableSize.width;
     viewportSize.y = (simd_uint1)mtkView.drawableSize.height;
     
+    view = mtkView;
     device = mtkView.device;
     
     commandQueue = [device newMTL4CommandQueue];
@@ -489,6 +497,11 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     // Create the render pipeline.
     [self createRenderPipelineFor:pixelFormat];
+    
+    panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
+    
+    [mtkView addGestureRecognizer:panGestureRecognizer];
+    
     return self;
 }
 
@@ -793,6 +806,85 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     // Signal when the GPU finishes rendering this frame with a shared event.
     [commandQueue signalEvent:sharedEvent value:frameNumber];
+}
+
+
+- (float2)pointInSDFSpace:(float2)pos
+{
+    const CGSize viewSiz = view.bounds.size;
+    
+    const float2 viewSize { float(viewSiz.width), float(viewSiz.height) };
+    const float2 textureSize { float(backgroundImageTexture.width), float(backgroundImageTexture.height) };
+    
+    const float2 scale = viewSize / textureSize;
+    const float s = std::min(scale.x, scale.y);
+    
+    const float displayedTextureWidth = textureSize.x * s;
+    const float displayedTextureHeight = displayedTextureWidth * (textureSize.y / textureSize.x);
+    const float2 displayedTextureSize { displayedTextureWidth, displayedTextureHeight };
+    const float2 displayedTextureOrigin = (viewSize - displayedTextureSize) * 0.5f;
+    
+    float2 p = pos - displayedTextureOrigin;
+    p /= s;
+    
+    return p;
+}
+
+- (Bubble*)pick:(float2)pos
+{
+    const auto p = [self pointInSDFSpace:pos];
+    
+    const size_t n = _bubbles.size();
+    for (size_t i=0; i < n; ++i)
+    {
+        Bubble& bubble = _bubbles[i];
+        const float d = bubble.computeSDF(p);
+        if (d <= 0.f)
+        {
+            return &bubble;
+        }
+    }
+    
+    return nullptr;
+}
+
+- (void)onPan:(UIPanGestureRecognizer*)recognizer
+{
+    const auto p = [recognizer locationInView:view];
+    const float2 pos { float(p.x), float(p.y) };
+    
+    switch(recognizer.state)
+    {
+        case UIGestureRecognizerStateBegan:
+        {
+            if ((movingBubble = [self pick:pos]))
+            {
+                initialMovingBubbleOrigin = movingBubble->origin;
+            }
+            
+            break;
+        }
+            
+        case UIGestureRecognizerStateChanged:
+        {
+            if (movingBubble != nullptr)
+            {
+                const auto pt = [self pointInSDFSpace:pos];
+                movingBubble->origin = pos;
+            }
+            
+            break;
+        }
+            
+        case UIGestureRecognizerStateEnded:
+        case UIGestureRecognizerStateCancelled:
+        {
+            movingBubble = nullptr;
+            break;
+        }
+            
+        default: break;
+    }
 }
 
 @end
