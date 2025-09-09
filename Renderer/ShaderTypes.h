@@ -87,8 +87,8 @@ struct Bubble final
 
 struct BubbleGroup final
 {
-    size_t nbBubbles;
-    float smoothFactor;
+    size_t nbBubbles = 0;
+    float smoothFactor = 50.f;
 };
 
 struct Uniforms final

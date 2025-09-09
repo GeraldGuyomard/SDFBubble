@@ -16,6 +16,7 @@ A platform-independent Metal renderer implementation that sets up the app's
 
 #include <algorithm>
 #include <vector>
+#include <set>
 
 // The shader types header that defines the input data types for the app's shaders.
 // The types define a common data format for both
@@ -111,7 +112,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     ///
     id<MTLBuffer> uniformsBuffer;
     
-    std::vector<BubbleGroup> _groups;
     std::vector<Bubble> _bubbles;
     
 }
@@ -417,31 +417,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     }
 }
 
-- (void) addGroupWithBubbleOrigin:(float2)origin radius:(float)radius
-{
-    _groups.push_back(BubbleGroup
-    {
-        .nbBubbles = 1,
-        .smoothFactor = 50.f
-    });
-    
-    _bubbles.push_back({
-        .origin =  origin,
-        .radius = radius
-    });
-}
-
-- (void) addGroupWithBubbles:(const std::vector<Bubble>&)bubbles
-{
-    _groups.push_back(BubbleGroup
-    {
-        .nbBubbles = bubbles.size(),
-        .smoothFactor = 10.f
-    });
-    
-    _bubbles.insert(_bubbles.end(), bubbles.begin(), bubbles.end());
-}
-
 - (nonnull instancetype)initWithView:(nonnull MTKView *)mtkView
 {
     self = [super init];
@@ -462,9 +437,21 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     const float2 size { float(offscreenTexture.width), float(offscreenTexture.height) };
     
-    [self addGroupWithBubbleOrigin:size * 0.5f radius:200.f];
-    [self addGroupWithBubbleOrigin:size * 0.75f radius:100.f];
-    [self addGroupWithBubbleOrigin:size * 0.25f radius:150.f];
+    _bubbles.push_back({
+        .origin = size * 0.5f,
+        .radius = 200.f
+    });
+    
+    _bubbles.push_back({
+        .origin = size * 0.75f,
+        .radius = 100.f
+    });
+    
+    _bubbles.push_back({
+        .origin = size * 0.25f,
+        .radius = 150.f
+    });
+    
     
     {
         Bubble b1 {
@@ -472,12 +459,12 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
             .radius = 100.f
         };
         
-        Bubble b2 {
+        _bubbles.push_back(b1);
+        
+        _bubbles.push_back( {
             .origin = b1.origin + float2{ 120.f, 120.f },
             .radius = 80.f
-        };
-        
-        [self addGroupWithBubbles:{b1, b2}];
+        });
     }
     [self createBuffers];
 
@@ -505,23 +492,76 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     return self;
 }
 
+- (void)computeBubbleGroups:(std::vector<BubbleGroup>&)oBubbleGroups bubbles:(std::vector<Bubble>&)oBubbles
+{
+    oBubbleGroups.clear();
+    oBubbles.clear();
+    
+    // brute force N square comparison
+    std::set<const Bubble*> bubbles;
+    
+    for (const auto& b : _bubbles)
+    {
+        bubbles.insert(&b);
+    }
+    
+    while (!bubbles.empty())
+    {
+        auto it = bubbles.begin();
+        
+        const auto* bubble = *it;
+        bubbles.erase(it);
+        
+        oBubbles.push_back(*bubble);
+        
+        BubbleGroup group;
+        group.nbBubbles = 1;
+        
+        // find all other bubbles interacting with the main bubble
+        for (auto it = bubbles.begin(); it != bubbles.end();)
+        {
+            const auto* otherBubble = *it;
+            const float distance = length(bubble->origin - otherBubble->origin);
+            const float minDist = 2.f * std::max(bubble->radius, otherBubble->radius);
+            
+            if (distance <= minDist)
+            {
+                ++group.nbBubbles;
+                oBubbles.push_back(*otherBubble);
+                it = bubbles.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        
+        oBubbleGroups.push_back(group);
+    }
+}
+
 - (void)updateUniformsBuffer
 {
     auto buf = reinterpret_cast<Uniforms*>(uniformsBuffer.contents);
     buf->viewportSize = viewportSize;
     
-    const size_t nbGroups = _groups.size();
+    std::vector<BubbleGroup> bubbleGroups;
+    std::vector<Bubble> bubbles;
+    
+    [self computeBubbleGroups:bubbleGroups bubbles:bubbles];
+    
+    const size_t nbGroups = bubbleGroups.size();
     buf->nbBubbleGroups = nbGroups;
     
     for (size_t i=0; i < nbGroups; ++i)
     {
-        buf->groups[i] = _groups[i];
+        buf->groups[i] = bubbleGroups[i];
     }
     
-    const size_t nbBubbles = _bubbles.size();
+    const size_t nbBubbles = bubbles.size();
     for (size_t i=0; i < nbBubbles; ++i)
     {
-        buf->bubbles[i] = _bubbles[i];
+        buf->bubbles[i] = bubbles[i];
     }
 }
 
@@ -666,6 +706,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
         NSLog(@"The view doesn't have an available drawable at this time.");
         return;
     }
+    
+    [self updateUniformsBuffer];
 
     // Get the render pass descriptor from the view's drawable instance.
     MTL4RenderPassDescriptor *renderPassDescriptor = view.currentMTL4RenderPassDescriptor;
