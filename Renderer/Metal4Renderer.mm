@@ -545,12 +545,17 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
         BubbleGroup group;
         group.nbBubbles = 1;
         
+        float minD = std::numeric_limits<float>::max();
+        
         // find all other bubbles interacting with the main bubble
         for (auto it = bubbles.begin(); it != bubbles.end();)
         {
             const auto* otherBubble = *it;
             const float distance = length(bubble->origin - otherBubble->origin);
-            const float minDist = 2.f * std::max(bubble->radius, otherBubble->radius);
+            const float d = std::max(bubble->radius, otherBubble->radius);
+            const float minDist = 2.f * d;
+            
+            minD = std::min(minD, d);
             
             if (distance <= minDist)
             {
@@ -562,6 +567,11 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
             {
                 ++it;
             }
+        }
+        
+        if (group.nbBubbles > 1)
+        {
+            group.smoothFactor = 3e3f / (1.f + minD);
         }
         
         oBubbleGroups.push_back(group);
