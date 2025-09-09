@@ -94,6 +94,16 @@ public:
         _texture.write(v, _gridId);
     }
     
+    bool isValid() const
+    {
+        return (_gridId.x < _texture.get_width()) && (_gridId.y < _texture.get_height());
+    }
+    
+    float2 position() const
+    {
+        return { float(_gridId.x), float(_gridId.y) };
+    }
+    
 private:
     texture2d<half, access::read_write> _texture;
     uint2 _gridId;
@@ -105,27 +115,7 @@ computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeT
                constant Uniforms* uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
 {
 
-    // Check that that this part of the grid is within the texture's bounds.
-    if ((gridId.x >= texture.get_width()) ||
-        (gridId.y >= texture.get_height()))
-    {
-        // Exit early for coordinates outside the bounds of the destination.
-        return;
-    }
-
-    const float2 pt { float(gridId.x), float(gridId.y) };
-    constant Bubble* bubbles = &uniforms->bubbles[0];
-    
     MetalTextureAccessor accessor { texture, gridId };
     
-    for (size_t i=0; i < uniforms->nbBubbleGroups; ++i)
-    {
-        constant auto& group = uniforms->groups[i];
-        if (evaluateBubbleGroup(group, bubbles, pt, accessor))
-        {
-            break;
-        }
-        
-        bubbles += group.nbBubbles;
-    }
+    computeAndDrawSDF(accessor, uniforms);
 }

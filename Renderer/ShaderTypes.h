@@ -5,8 +5,7 @@ Abstract:
 The types and enum constants the app shares with its Metal shaders and C/ObjC code.
 */
 
-#ifndef ShaderTypes_h
-#define ShaderTypes_h
+#pragma once
 
 #import <simd/simd.h>
 
@@ -148,9 +147,10 @@ float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothF
 template <typename TTextureAccessor>
 bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
                     SHADER_CONSTANT Bubble* bubbles,
-                    float2 pt,
                     TTextureAccessor accessor)
 {
+    const auto pt = accessor.position();
+    
     float d;
     if (group.nbBubbles == 1)
     {
@@ -181,4 +181,28 @@ bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
     return false;
 }
 
-#endif /* ShaderTypes_h */
+template <typename TTextureAccessor>
+void
+computeAndDrawSDF(TTextureAccessor accessor, SHADER_CONSTANT Uniforms* uniforms)
+{
+
+    // Check that that this part of the grid is within the texture's bounds.
+    if (!accessor.isValid())
+    {
+        // Exit early for coordinates outside the bounds of the destination.
+        return;
+    }
+
+    SHADER_CONSTANT Bubble* bubbles = &uniforms->bubbles[0];
+    
+    for (size_t i=0; i < uniforms->nbBubbleGroups; ++i)
+    {
+        SHADER_CONSTANT auto& group = uniforms->groups[i];
+        if (evaluateBubbleGroup(group, bubbles, accessor))
+        {
+            break;
+        }
+        
+        bubbles += group.nbBubbles;
+    }
+}
