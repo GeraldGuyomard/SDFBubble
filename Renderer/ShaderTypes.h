@@ -26,7 +26,7 @@ The types and enum constants the app shares with its Metal shaders and C/ObjC co
 ///
 /// The values need to match between both sides of the exchange for the data to get
 /// to the correct place.
-typedef enum BufferBindingIndex
+enum BufferBindingIndex
 {
     /// The buffer binding index value that stores the triangle's vertex data.
     ///
@@ -38,7 +38,7 @@ typedef enum BufferBindingIndex
     /// The vertex shader calculates the pixel coordinates of the triangle's vertices
     /// based on the size of the app's viewport.
     BufferBindingIndexForUniforms = 1,
-} BufferBindingIndex;
+};
 
 /// Defines the binding index values for passing texture arguments to GPU function parameters.
 ///
@@ -48,20 +48,20 @@ typedef enum BufferBindingIndex
 ///
 /// The values need to match between both sides of the exchange for the data to get
 /// to the correct place.
-typedef enum TextureBindingIndex
+enum TextureBindingIndex
 {
     /// An index of a color texture for a compute kernel in a compute pass.
     ComputeTextureBindingIndexForColorImage = 0,
 
     /// An index of a texture for a fragment shader in a render pass.
     RenderTextureBindingIndex = 0,
-} TextureBindingIndex;
+};
 
 /// A type that defines the data layout for a triangle vertex,
 /// which includes position and texture coordinate values.
 ///
 /// The app's main code and shader code apply this type for data layout consistency.
-typedef struct VertexData
+struct VertexData
 {
     /// The location for a vertex in 2D, pixel-coordinate space.
     ///
@@ -71,7 +71,7 @@ typedef struct VertexData
 
     /// The location within a 2D texture for a vertex.
     float2 textureCoordinate;
-} VertexData;
+};
 
 struct Bubble final
 {
