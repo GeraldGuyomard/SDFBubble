@@ -114,7 +114,6 @@ float opSmoothUnion( float d1, float d2, float k )
 float computeSDF(SHADER_CONSTANT Bubble& bubble1, SHADER_CONSTANT Bubble& bubble2, float smoothFactor, float2 pt)
 {
     return opSmoothUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt), smoothFactor);
-    //return opUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt));
 }
 
 float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothFactor, float2 pt)
@@ -126,7 +125,6 @@ float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothF
     while (bubble < end)
     {
         d = opSmoothUnion(d, (bubble++)->computeSDF(pt), smoothFactor);
-        //d = opUnion(d, (bubble++)->computeSDF(pt));
     }
     
     return d;
@@ -153,7 +151,6 @@ bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
         // blend
         d = computeSDF(&bubbles[0], group.nbBubbles, group.smoothFactor, pt);
     }
-    
     
     if (d <= 0.f)
     {
