@@ -117,7 +117,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     std::vector<Bubble> _bubbles;
     Bubble* movingBubble;
-    float2 initialMovingBubbleOrigin;
     
     UIPanGestureRecognizer* panGestureRecognizer;
     
@@ -857,11 +856,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     {
         case UIGestureRecognizerStateBegan:
         {
-            if ((movingBubble = [self pick:pos]))
-            {
-                initialMovingBubbleOrigin = movingBubble->origin;
-            }
-            
+            movingBubble = [self pick:pos];
             break;
         }
             
@@ -870,7 +865,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
             if (movingBubble != nullptr)
             {
                 const auto pt = [self pointInSDFSpace:pos];
-                movingBubble->origin = pos;
+                movingBubble->origin = pt;
             }
             
             break;
