@@ -78,7 +78,7 @@ struct Bubble final
     float2 origin;
     float radius;
     
-    float computeSDF(float2 pt) const
+    float computeSDF(float2 pt) SHADER_CONSTANT
     {
         const float d = length(pt - origin) - radius;
         return d;
@@ -99,5 +99,86 @@ struct Uniforms final
     BubbleGroup groups[1024];
     Bubble bubbles[1024];
 };
+
+float opUnion( float d1, float d2 )
+{
+    return min(d1,d2);
+}
+
+float opSmoothUnion( float d1, float d2, float k )
+{
+    k *= 4.0;
+    float h = max(k-abs(d1-d2),0.0f);
+    return min(d1, d2) - h*h*0.25f/k;
+}
+
+float computeSDF(SHADER_CONSTANT Bubble& bubble1, SHADER_CONSTANT Bubble& bubble2, float smoothFactor, float2 pt)
+{
+    return opSmoothUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt), smoothFactor);
+    //return opUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt));
+}
+
+float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothFactor, float2 pt)
+{
+#if 1
+    float d = bubble[0].computeSDF(pt);
+    
+    for (size_t i = 1; i < nbBubbles; ++i)
+    {
+        const float newD = bubble[i].computeSDF(pt);
+        //d = opSmoothUnion(d, (bubble++)->computeSDF(pt), smoothFactor);
+        d = opUnion(d, newD);
+    }
+    
+#else
+    SHADER_CONSTANT Bubble* const end = bubble + nbBubbles;
+    
+    float d = (bubble++)->computeSDF(pt);
+    
+    while (bubble < end)
+    {
+        //d = opSmoothUnion(d, (bubble++)->computeSDF(pt), smoothFactor);
+        d = opUnion(d, (bubble++)->computeSDF(pt));
+    }
+#endif
+    
+    return d;
+}
+
+template <typename TTextureAccessor>
+bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
+                    SHADER_CONSTANT Bubble* bubbles,
+                    float2 pt,
+                    TTextureAccessor accessor)
+{
+    float d;
+    if (group.nbBubbles == 1)
+    {
+        d = bubbles[0].computeSDF(pt);
+    }
+    else if (group.nbBubbles == 2)
+    {
+        d = computeSDF(bubbles[0], bubbles[1], group.smoothFactor, pt);
+    }
+    else
+    {
+        // blend
+        return computeSDF(&bubbles[0], group.nbBubbles, group.smoothFactor, pt);
+    }
+    
+    
+    if (d <= 0.f)
+    {
+        half4 c = accessor.read();
+        
+        // inside
+        c += half4 { 0.1f, 0.1f, 0.1f, 0.f};
+
+        accessor.write(c);
+        return true;
+    }
+    
+    return false;
+}
 
 #endif /* ShaderTypes_h */

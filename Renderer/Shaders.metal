@@ -76,62 +76,28 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     return (simd_float4)(colorSample);
 }
 
-float opUnion( float d1, float d2 )
+class MetalTextureAccessor final
 {
-    return min(d1,d2);
-}
-
-float opSmoothUnion( float d1, float d2, float k )
-{
-    k *= 4.0;
-    float h = max(k-abs(d1-d2),0.0);
-    return min(d1, d2) - h*h*0.25/k;
-}
-
-float computeSDF(Bubble bubble1, Bubble bubble2, float smoothFactor, float2 pt)
-{
-    return opSmoothUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt), smoothFactor);
-    //return opUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt));
-}
-
-bool evaluateBubbleGroup(constant BubbleGroup& group,
-                    constant Bubble* bubbles,
-                    float2 pt,
-                    uint2 gridId,
-                    texture2d<half, access::read_write> texture)
-{
-    float d;
-    if (group.nbBubbles == 1)
+public:
+    
+    MetalTextureAccessor(texture2d<half, access::read_write> texture, uint2 gridId)
+    : _texture(texture), _gridId(gridId)
+    {}
+    
+    half4 read() const
     {
-        const auto b = bubbles[0];
-        d = b.computeSDF(pt);
-    }
-    else if (group.nbBubbles == 2)
-    {
-        const auto b1 = bubbles[0];
-        const auto b2 = bubbles[1];
-        d = computeSDF(b1, b2, group.smoothFactor, pt);
-    }
-    else
-    {
-        // blend
-        return false;
+        return _texture.read(_gridId);
     }
     
-    
-    if (d <= 0.f)
+    void write(half4 v)
     {
-        half4 c = texture.read(gridId);
-        
-        // inside
-        c += half4 { 0.1f, 0.1f, 0.1f, 0.f};
-
-        texture.write(c, gridId);
-        return true;
+        _texture.write(v, _gridId);
     }
     
-    return false;
-}
+private:
+    texture2d<half, access::read_write> _texture;
+    uint2 _gridId;
+};
 
 kernel void
 computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeTextureBindingIndexForColorImage)]],
@@ -150,10 +116,12 @@ computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeT
     const float2 pt { float(gridId.x), float(gridId.y) };
     constant Bubble* bubbles = &uniforms->bubbles[0];
     
+    MetalTextureAccessor accessor { texture, gridId };
+    
     for (size_t i=0; i < uniforms->nbBubbleGroups; ++i)
     {
         constant auto& group = uniforms->groups[i];
-        if (evaluateBubbleGroup(group, bubbles, pt, gridId, texture))
+        if (evaluateBubbleGroup(group, bubbles, pt, accessor))
         {
             break;
         }
