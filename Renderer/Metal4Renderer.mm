@@ -117,9 +117,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     std::vector<Bubble> _bubbles;
     Bubble* movingBubble;
-    
-    UIPanGestureRecognizer* panGestureRecognizer;
-    
 }
 
 /// Creates a texture instance from an image file.
@@ -497,9 +494,11 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Create the render pipeline.
     [self createRenderPipelineFor:pixelFormat];
     
-    panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
-    
+    auto panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
     [mtkView addGestureRecognizer:panGestureRecognizer];
+    
+    auto tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onTap:)];
+    [mtkView addGestureRecognizer:tapGestureRecognizer];
     
     return self;
 }
@@ -552,9 +551,14 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     }
 }
 
+- (Uniforms*)uniforms
+{
+    return reinterpret_cast<Uniforms*>(uniformsBuffer.contents);
+}
+
 - (void)updateUniformsBuffer
 {
-    auto buf = reinterpret_cast<Uniforms*>(uniformsBuffer.contents);
+    auto buf = [self uniforms];
     buf->viewportSize = viewportSize;
     
     std::vector<BubbleGroup> bubbleGroups;
@@ -879,6 +883,66 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
         }
             
         default: break;
+    }
+}
+
+class CPUTextureAccessor final
+{
+public:
+    CPUTextureAccessor(id<MTLTexture> texture, uint2 gridId)
+    : _texture(texture), _gridId(gridId), _value(std::make_shared<half4>(0.f))
+    {}
+    
+    CPUTextureAccessor(const CPUTextureAccessor&) = default;
+    
+    half4 read() const
+    {
+        return *_value;
+    }
+    
+    void write(half4 v)
+    {
+        *_value = v;
+    }
+    
+    bool isValid() const
+    {
+        return (_gridId.x < _texture.width) && (_gridId.y < _texture.height);
+    }
+    
+    float2 position() const
+    {
+        return { float(_gridId.x), float(_gridId.y) };
+    }
+    
+    float4 value() const
+    {
+        return float4 { _value->x, _value->y, _value->z, _value->w };
+    }
+    
+private:
+    id<MTLTexture> _texture;
+    uint2 _gridId;
+    
+    std::shared_ptr<half4> _value;
+};
+
+- (void)onTap:(UITapGestureRecognizer*)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        auto uniforms = [self uniforms];
+        
+        const CGPoint ptView = [recognizer locationInView:view];
+        const float2 ptSDF = [self pointInSDFSpace: float2{ float(ptView.x), float(ptView.y) }];
+        
+        const uint2 pos { uint32_t(ptSDF.x), uint32_t(ptSDF.y) };
+        
+        CPUTextureAccessor accessor { offscreenTexture, pos };
+        computeAndDrawSDF(accessor, uniforms);
+        
+        const auto value = accessor.value();
+        NSLog(@"value [%1.2f, %1.2f, %1.2f, %1.2f]", value.r, value.g, value.b, value.a);
     }
 }
 
