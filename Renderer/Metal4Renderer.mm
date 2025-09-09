@@ -31,6 +31,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
 #define kMaxFramesInFlight 3
 
+@interface Metal4Renderer()
+@end
+
 /// A class that renders each of the app's video frames.
 @implementation Metal4Renderer
 {
@@ -117,6 +120,11 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     std::vector<Bubble> _bubbles;
     Bubble* movingBubble;
+    float initialMovingBubbleRadius;
+    
+    UIPanGestureRecognizer* panGestureRecognizer;
+    UITapGestureRecognizer* tapGestureRecognizer;
+    UITapGestureRecognizer* doubleTapGestureRecognizer;
 }
 
 /// Creates a texture instance from an image file.
@@ -439,6 +447,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Create the app's resources.
     [self createTextures];
     
+    /*
     const float2 size { float(offscreenTexture.width), float(offscreenTexture.height) };
     
     _bubbles.push_back({
@@ -456,20 +465,18 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
         .radius = 150.f
     });
     
+    Bubble b1 {
+        .origin = float2 { size.x * 0.7f, size.y * 0.2f },
+        .radius = 100.f
+    };
     
-    {
-        Bubble b1 {
-            .origin = float2 { size.x * 0.7f, size.y * 0.2f },
-            .radius = 100.f
-        };
-        
-        _bubbles.push_back(b1);
-        
-        _bubbles.push_back( {
-            .origin = b1.origin + float2{ 120.f, 120.f },
-            .radius = 80.f
-        });
-    }
+    _bubbles.push_back(b1);
+    
+    _bubbles.push_back( {
+        .origin = b1.origin + float2{ 120.f, 120.f },
+        .radius = 80.f
+    });*/
+    
     [self createBuffers];
 
     // Create the types that manage the resources.
@@ -494,11 +501,21 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Create the render pipeline.
     [self createRenderPipelineFor:pixelFormat];
     
-    auto panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
+    panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(onPan:)];
     [mtkView addGestureRecognizer:panGestureRecognizer];
     
-    auto tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onTap:)];
+    tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onTap:)];
+    tapGestureRecognizer.numberOfTapsRequired = 1;
     [mtkView addGestureRecognizer:tapGestureRecognizer];
+    
+    doubleTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onDoubleTap:)];
+    doubleTapGestureRecognizer.numberOfTapsRequired = 2;
+    [mtkView addGestureRecognizer:doubleTapGestureRecognizer];
+    
+    [tapGestureRecognizer requireGestureRecognizerToFail:doubleTapGestureRecognizer];
+    
+    auto scaleRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(onPinch:)];
+    [mtkView addGestureRecognizer:scaleRecognizer];
     
     return self;
 }
@@ -943,6 +960,60 @@ private:
         
         const auto value = accessor.value();
         NSLog(@"value [%1.2f, %1.2f, %1.2f, %1.2f]", value.r, value.g, value.b, value.a);
+    }
+}
+
+- (void)onDoubleTap:(UITapGestureRecognizer*)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        const CGPoint ptView = [recognizer locationInView:view];
+        const float2 ptSDF = [self pointInSDFSpace: float2{ float(ptView.x), float(ptView.y) }];
+        
+        _bubbles.push_back({
+            .origin = ptSDF,
+            .radius = 100.f
+        });
+    }
+}
+
+- (void)onPinch:(UIPinchGestureRecognizer*)recognizer
+{
+    const auto p = [recognizer locationInView:view];
+    const float2 pos { float(p.x), float(p.y) };
+    
+    switch(recognizer.state)
+    {
+        case UIGestureRecognizerStateBegan:
+        {
+            movingBubble = [self pick:pos];
+            if (movingBubble != nullptr)
+            {
+                initialMovingBubbleRadius = movingBubble->radius;
+            }
+            
+            break;
+        }
+            
+        case UIGestureRecognizerStateChanged:
+        {
+            if (movingBubble != nullptr)
+            {
+                const float s = recognizer.scale;
+                movingBubble->radius = initialMovingBubbleRadius * s;
+            }
+            
+            break;
+        }
+            
+        case UIGestureRecognizerStateEnded:
+        case UIGestureRecognizerStateCancelled:
+        {
+            movingBubble = nullptr;
+            break;
+        }
+            
+        default: break;
     }
 }
 
