@@ -540,6 +540,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
         const auto* bubble = *it;
         bubbles.erase(it);
         
+        const size_t startIndex = oBubbles.size();
         oBubbles.push_back(*bubble);
         
         BubbleGroup group;
@@ -551,19 +552,30 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
         for (auto it = bubbles.begin(); it != bubbles.end();)
         {
             const auto* otherBubble = *it;
-            const float distance = length(bubble->origin - otherBubble->origin);
-            const float d = std::max(bubble->radius, otherBubble->radius);
-            const float minDist = 2.f * d;
+            bool coalesced = false;
             
-            minD = std::min(minD, d);
-            
-            if (distance <= minDist)
+            for (size_t i=0; i < group.nbBubbles; ++i)
             {
-                ++group.nbBubbles;
-                oBubbles.push_back(*otherBubble);
-                it = bubbles.erase(it);
+                const auto& b = oBubbles[startIndex + i];
+                const float l = length(b.origin - otherBubble->origin);
+                const float distance = std::min(distance, l);
+                
+                const float d = std::max(bubble->radius, otherBubble->radius);
+                const float minDist = 2.f * d;
+                
+                minD = std::min(minD, d);
+                
+                if (distance <= minDist)
+                {
+                    ++group.nbBubbles;
+                    oBubbles.push_back(*otherBubble);
+                    it = bubbles.erase(it);
+                    coalesced = true;
+                    break;
+                }
             }
-            else
+            
+            if (!coalesced)
             {
                 ++it;
             }
