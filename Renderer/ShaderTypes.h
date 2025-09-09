@@ -119,17 +119,6 @@ float computeSDF(SHADER_CONSTANT Bubble& bubble1, SHADER_CONSTANT Bubble& bubble
 
 float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothFactor, float2 pt)
 {
-#if 1
-    float d = bubble[0].computeSDF(pt);
-    
-    for (size_t i = 1; i < nbBubbles; ++i)
-    {
-        const float newD = bubble[i].computeSDF(pt);
-        //d = opSmoothUnion(d, (bubble++)->computeSDF(pt), smoothFactor);
-        d = opUnion(d, newD);
-    }
-    
-#else
     SHADER_CONSTANT Bubble* const end = bubble + nbBubbles;
     
     float d = (bubble++)->computeSDF(pt);
@@ -139,7 +128,6 @@ float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothF
         d = opSmoothUnion(d, (bubble++)->computeSDF(pt), smoothFactor);
         //d = opUnion(d, (bubble++)->computeSDF(pt));
     }
-#endif
     
     return d;
 }
