@@ -63,7 +63,8 @@ vertexShader(uint                   vertexID              [[ vertex_id ]],
 /// A Returns color data from the input texture by sampling it at the fragment's
 /// texture coordinates.
 fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
-                               texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]])
+                               texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]],
+                               texture2d<half> sdfTexture [[ texture(SDFTextureBindingIndex) ]])
 {
     /// A basic texture sampler with linear filter settings.
     constexpr sampler textureSampler (mag_filter::linear,
@@ -71,23 +72,21 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
 
     /// The color value of the input texture at the fragment's texture coordinates.
     const half4 colorSample = colorTexture.sample (textureSampler, in.textureCoordinate);
-
+    const half4 sdfSample = sdfTexture.sample (textureSampler, in.textureCoordinate);
+    
+    const auto c = colorSample + sdfSample;
+    
     // Pass the texture color to the rasterizer.
-    return (simd_float4)(colorSample);
+    return (float4) c;
 }
 
 class MetalTextureAccessor final
 {
 public:
     
-    MetalTextureAccessor(texture2d<half, access::read_write> texture, uint2 gridId)
+    MetalTextureAccessor(texture2d<half, access::write> texture, uint2 gridId)
     : _texture(texture), _gridId(gridId)
     {}
-    
-    half4 read() const
-    {
-        return _texture.read(_gridId);
-    }
     
     void write(half4 v)
     {
@@ -105,12 +104,12 @@ public:
     }
     
 private:
-    texture2d<half, access::read_write> _texture;
+    texture2d<half, access::write> _texture;
     uint2 _gridId;
 };
 
 kernel void
-computeAndDrawSDF(texture2d<half, access::read_write> texture [[texture(ComputeTextureBindingIndexForColorImage)]],
+computeAndDrawSDF(texture2d<half, access::write> texture [[texture(ComputeTextureBindingIndexForSDF)]],
                 uint2 gridId     [[thread_position_in_grid]],
                constant Uniforms* uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
 {

@@ -94,7 +94,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     /// The app build a color image by combines this texture with
     /// `chyronTexture`, which becomes the input texture for the grayscale conversion.
     id<MTLTexture> backgroundImageTexture;
-    
+    id<MTLTexture> sdfTexture;
     id<MTLTexture> offscreenTexture;
 
     /// A two-dimensional size that represents the number of threads for each
@@ -325,7 +325,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     NSAssert(nil != backgroundImageTexture,
              @"The app can't create a texture for the background image: %@",
              backgroundImageFileName);
-
+    backgroundImageTexture.label = @"BackgroundImageTexture";
+    
     // Create the source color texture that stores the combined texture data.
     MTLTextureDescriptor *textureDescriptor = [[MTLTextureDescriptor alloc] init];
     textureDescriptor.textureType = MTLTextureType2D;
@@ -340,9 +341,16 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // doesn't modify it.
     textureDescriptor.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
     offscreenTexture = [device newTextureWithDescriptor:textureDescriptor];
-
     NSAssert(nil != offscreenTexture,
              @"The device can't create a texture for the composite color image.");
+    offscreenTexture.label = @"Offscreen Texture";
+    
+    sdfTexture = [device newTextureWithDescriptor:textureDescriptor];
+    NSAssert(nil != sdfTexture,
+             @"The device can't create a texture for the composite color image.");
+    sdfTexture.label = @"SDF Texture";
+    
+    
 }
 
 /// Configures the number of rows and columns in the threadgroups based on the input image's size.
@@ -377,7 +385,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Configure the descriptor to store 2 buffers:
     // - A vertex buffer
     // - A viewport size buffer.
-    argumentTableDescriptor.maxTextureBindCount = 2;
+    argumentTableDescriptor.maxTextureBindCount = 3;
     argumentTableDescriptor.maxBufferBindCount = 2;
 
     // Create an argument table with the descriptor.
@@ -415,6 +423,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Add the communal resources to the residency set.
     [residencySet addAllocation:backgroundImageTexture];
     [residencySet addAllocation:offscreenTexture];
+    [residencySet addAllocation:sdfTexture];
     [residencySet addAllocation:vertexDataBuffer];
     [residencySet addAllocation:uniformsBuffer];
     [residencySet commit];
@@ -639,8 +648,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [computeEncoder setArgumentTable:argumentTable];
 
     // Bind the composite color (input) texture in the argument table.
-    [argumentTable setTexture:offscreenTexture.gpuResourceID
-                      atIndex:ComputeTextureBindingIndexForColorImage];
+    [argumentTable setTexture:sdfTexture.gpuResourceID
+                      atIndex:ComputeTextureBindingIndexForSDF];
 
     [argumentTable setAddress:uniformsBuffer.gpuAddress
                       atIndex:BufferBindingIndexForUniforms];
@@ -741,6 +750,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [argumentTable setTexture:offscreenTexture.gpuResourceID
                       atIndex:RenderTextureBindingIndex];
 
+    [argumentTable setTexture:sdfTexture.gpuResourceID
+                      atIndex:SDFTextureBindingIndex];
+    
     // Draw the first rectangle with the color composite texture.
     const NSUInteger firstRectangleOffset = 0;
     const NSUInteger rectangleVertexCount = 6;

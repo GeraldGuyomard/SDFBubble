@@ -50,10 +50,11 @@ enum BufferBindingIndex
 enum TextureBindingIndex
 {
     /// An index of a color texture for a compute kernel in a compute pass.
-    ComputeTextureBindingIndexForColorImage = 0,
+    ComputeTextureBindingIndexForSDF = 2,
 
     /// An index of a texture for a fragment shader in a render pass.
     RenderTextureBindingIndex = 0,
+    SDFTextureBindingIndex = 1,
 };
 
 /// A type that defines the data layout for a triangle vertex,
@@ -154,10 +155,8 @@ bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
     
     if (d <= 0.f)
     {
-        half4 c = accessor.read();
-        
         // inside
-        c += half4 { 0.1f, 0.1f, 0.1f, 0.f};
+        const half4 c { 0.1f, 0.1f, 0.1f, 0.f};
 
         accessor.write(c);
         return true;
@@ -180,6 +179,7 @@ computeAndDrawSDF(TTextureAccessor accessor, SHADER_CONSTANT Uniforms* uniforms)
 
     SHADER_CONSTANT Bubble* bubbles = &uniforms->bubbles[0];
     
+    accessor.write(half4 { 0.f });
     for (size_t i=0; i < uniforms->nbBubbleGroups; ++i)
     {
         SHADER_CONSTANT auto& group = uniforms->groups[i];
