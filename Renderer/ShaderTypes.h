@@ -156,9 +156,7 @@ bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
     if (d <= 0.f)
     {
         // inside
-        const half4 c { 0.1f, 0.1f, 0.1f, 0.f};
-
-        accessor.write(c);
+        accessor.write(d);
         return true;
     }
     
@@ -179,7 +177,7 @@ computeAndDrawSDF(TTextureAccessor accessor, SHADER_CONSTANT Uniforms* uniforms)
 
     SHADER_CONSTANT Bubble* bubbles = &uniforms->bubbles[0];
     
-    accessor.write(half4 { 0.f });
+    accessor.write(0.f);
     for (size_t i=0; i < uniforms->nbBubbleGroups; ++i)
     {
         SHADER_CONSTANT auto& group = uniforms->groups[i];

@@ -72,9 +72,13 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
 
     /// The color value of the input texture at the fragment's texture coordinates.
     const half4 colorSample = colorTexture.sample (textureSampler, in.textureCoordinate);
-    const half4 sdfSample = sdfTexture.sample (textureSampler, in.textureCoordinate);
+    const float sdf = sdfTexture.sample (textureSampler, in.textureCoordinate).r;
     
-    const auto c = colorSample + sdfSample;
+    constexpr float k = 1e-1f;
+    constexpr float m = 0.8f;
+    const half s = (sdf != 0.f) ? m * exp(sdf * k) : 0.f;
+    
+    const auto c = colorSample + half4 { s, s, s, 0.f };
     
     // Pass the texture color to the rasterizer.
     return (float4) c;
@@ -88,7 +92,7 @@ public:
     : _texture(texture), _gridId(gridId)
     {}
     
-    void write(half4 v)
+    void write(half v)
     {
         _texture.write(v, _gridId);
     }

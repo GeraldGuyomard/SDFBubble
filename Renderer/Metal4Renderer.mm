@@ -345,6 +345,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
              @"The device can't create a texture for the composite color image.");
     offscreenTexture.label = @"Offscreen Texture";
     
+    textureDescriptor.pixelFormat = MTLPixelFormatR16Float;
     sdfTexture = [device newTextureWithDescriptor:textureDescriptor];
     NSAssert(nil != sdfTexture,
              @"The device can't create a texture for the composite color image.");
@@ -941,17 +942,12 @@ class CPUTextureAccessor final
 {
 public:
     CPUTextureAccessor(id<MTLTexture> texture, uint2 gridId)
-    : _texture(texture), _gridId(gridId), _value(std::make_shared<half4>(0.f))
+    : _texture(texture), _gridId(gridId), _value(std::make_shared<float>(0.f))
     {}
     
     CPUTextureAccessor(const CPUTextureAccessor&) = default;
     
-    half4 read() const
-    {
-        return *_value;
-    }
-    
-    void write(half4 v)
+    void write(float v)
     {
         *_value = v;
     }
@@ -966,16 +962,16 @@ public:
         return { float(_gridId.x), float(_gridId.y) };
     }
     
-    float4 value() const
+    float value() const
     {
-        return float4 { _value->x, _value->y, _value->z, _value->w };
+        return *_value;
     }
     
 private:
     id<MTLTexture> _texture;
     uint2 _gridId;
     
-    std::shared_ptr<half4> _value;
+    std::shared_ptr<float> _value;
 };
 
 - (void)onTap:(UITapGestureRecognizer*)recognizer
@@ -993,7 +989,7 @@ private:
         computeAndDrawSDF(accessor, uniforms);
         
         const auto value = accessor.value();
-        NSLog(@"value [%1.2f, %1.2f, %1.2f, %1.2f]", value.r, value.g, value.b, value.a);
+        NSLog(@"value [%1.2f]", value);
     }
 }
 
