@@ -114,7 +114,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     /// The current size of the view, which the app sends as an input to the
     /// vertex shader.
-    simd_float2 viewportSize;
+    float2 viewportSize;
 
     /// A buffer that stores the viewport's size data.
     ///
@@ -618,7 +618,12 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 - (void)updateUniformsBuffer
 {
     auto buf = [self uniforms];
+    
     buf->viewportSize = viewportSize;
+    
+    const float2 gradientScale { 1.f / float(sdfGradientTexture.width), 1.f / float(sdfGradientTexture.height) };
+    
+    buf->gradientScale = gradientScale;
     
     std::vector<BubbleGroup> bubbleGroups;
     std::vector<Bubble> bubbles;

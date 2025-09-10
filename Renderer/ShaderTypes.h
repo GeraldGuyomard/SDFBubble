@@ -97,6 +97,7 @@ struct BubbleGroup final
 struct Uniforms final
 {
     float2 viewportSize;
+    float2 gradientScale;
     size_t nbBubbleGroups;
     
     BubbleGroup groups[1024];
@@ -206,8 +207,10 @@ void drawSDFGradient(TAccessorIn sdfAccessorIn, TAccessorOut gradientAccessorOut
     const auto bottom = sdfAccessorIn.read({gridId.x, gridId.y + 1});
     const auto dY = (bottom - top) / 2.f;
     
+    const auto gradient = normalize(float2 { dX, dY });
+    
     const auto distance = sdfAccessorIn.read(gridId);
-    const float4 distanceAndGradient { distance, dX, dY, 0.f };
+    const float4 distanceAndGradient { distance, gradient.x, gradient.y, 0.f };
     
     gradientAccessorOut.writeFloat4(distanceAndGradient);
     

@@ -60,11 +60,17 @@ vertexShader(uint                   vertexID              [[ vertex_id ]],
     return out;
 }
 
+float computeSDFStrength(float sdf, float k, float m)
+{
+    return (sdf != 0.f) ? m * exp(sdf * k) : 0.f;
+}
+
 /// A Returns color data from the input texture by sampling it at the fragment's
 /// texture coordinates.
 fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
                                texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]],
-                               texture2d<half> sdfGradientTexture [[ texture(SDFGradientTextureBindingIndex) ]])
+                               texture2d<half> sdfGradientTexture [[ texture(SDFGradientTextureBindingIndex) ]],
+                               constant Uniforms* uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
 {
     /// A basic texture sampler with linear filter settings.
     constexpr sampler textureSampler (mag_filter::linear,
@@ -73,13 +79,28 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     const half4 colorSample = colorTexture.sample (textureSampler, in.textureCoordinate);
     
     const half4 distanceAndGradient = sdfGradientTexture.sample (textureSampler, in.textureCoordinate);
+    
+    auto c = colorSample;
+    
     const float sdf = distanceAndGradient.x;
     
-    constexpr float k = 1e-1f;
-    constexpr float m = 0.8f;
-    const half s = (sdf != 0.f) ? m * exp(sdf * k) : 0.f;
+    // refractions
+    const float2 gradient { distanceAndGradient.y, distanceAndGradient.z };
+    const half gradientStrength = computeSDFStrength(sdf, 1e-2f, 0.8f);
     
-    const auto c = colorSample + half4 { s, s, s, 0.f };
+    if (gradientStrength >= 0.025f)
+    {
+        const float2 v = gradient * uniforms->gradientScale * 1e1f;
+        const auto refractionPos = in.textureCoordinate + v;
+        const auto refractionColor = colorTexture.sample(textureSampler, refractionPos);
+        
+        c = refractionColor;
+        //c = half4 { 1.f, 0.f, 0.f, 1.f };
+        //c = mix(colorSample, refractionColor, gradientStrength);
+    }
+    
+    const half luminosity = computeSDFStrength(sdf, 1e-1f, 0.8f);
+    c += half4 { luminosity, luminosity, luminosity, 0.f };
     
     // Pass the texture color to the rasterizer.
     return (float4) c;
