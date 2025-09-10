@@ -72,12 +72,8 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
 
     const half4 colorSample = colorTexture.sample (textureSampler, in.textureCoordinate);
     
-#if 1
     const half4 distanceAndGradient = sdfGradientTexture.sample (textureSampler, in.textureCoordinate);
     const float sdf = distanceAndGradient.x;
-#else
-    const float sdf = sdfTexture.sample (textureSampler, in.textureCoordinate).r;
-#endif
     
     constexpr float k = 1e-1f;
     constexpr float m = 0.8f;
