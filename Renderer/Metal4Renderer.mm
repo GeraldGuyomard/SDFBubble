@@ -353,7 +353,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
              @"The device can't create a texture for the SDF.");
     sdfTexture.label = @"SDF Texture";
     
-    textureDescriptor.pixelFormat = MTLPixelFormatRGBA8Sint;
+    textureDescriptor.pixelFormat = MTLPixelFormatRGBA32Float;
     sdfGradientTexture = [device newTextureWithDescriptor:textureDescriptor];
     NSAssert(nil != sdfGradientTexture,
              @"The device can't create a texture for the gradient.");
@@ -780,9 +780,6 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Bind the color composite texture.
     [argumentTable setTexture:offscreenTexture.gpuResourceID
                       atIndex:RenderTextureBindingIndex];
-
-    [argumentTable setTexture:sdfTexture.gpuResourceID
-                      atIndex:SDFTextureBindingIndex];
     
     [argumentTable setTexture:sdfGradientTexture.gpuResourceID
                       atIndex:SDFGradientTextureBindingIndex];

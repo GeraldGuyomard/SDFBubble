@@ -57,8 +57,7 @@ enum TextureBindingIndex
     
     /// An index of a texture for a fragment shader in a render pass.
     RenderTextureBindingIndex = 0,
-    SDFTextureBindingIndex = 1,
-    SDFGradientTextureBindingIndex = 2
+    SDFGradientTextureBindingIndex = 1
 };
 
 /// A type that defines the data layout for a triangle vertex,
