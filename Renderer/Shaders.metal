@@ -86,9 +86,10 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     
     // refractions
     const float2 gradient { distanceAndGradient.y, distanceAndGradient.z };
-    const half gradientStrength = computeSDFStrength(sdf, 1e-2f, 0.8f);
+    half gradientStrength = computeSDFStrength(sdf, 1e-2f, 0.8f);
+    gradientStrength = smoothstep(half(0.f), half(1.f), gradientStrength);
     
-    if (gradientStrength >= 0.025f)
+    if (gradientStrength != 0.f)
     {
         const float2 v = gradient * uniforms->gradientScale;
         const auto refractionPos = in.textureCoordinate + v;
