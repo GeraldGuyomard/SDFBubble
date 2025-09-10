@@ -23,8 +23,8 @@
 		3AF7EA0C1EB64A46003BB06D /* Metal4Renderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */; };
 		3AF7EA101EB64A46003BB06D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9C11EB64A46003BB06D /* Shaders.metal */; };
 		3AF7EA121EB64A46003BB06D /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3AF7E9C11EB64A46003BB06D /* Shaders.metal */; };
-		EBC87E872DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */; };
-		EBC87E892DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */ = {isa = PBXBuildFile; fileRef = EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */; };
+		AB5A1BB52E710B3700ECD643 /* water.tga in Resources */ = {isa = PBXBuildFile; fileRef = AB5A1BB42E710B3700ECD643 /* water.tga */; };
+		AB5A1BB62E710B3700ECD643 /* water.tga in Resources */ = {isa = PBXBuildFile; fileRef = AB5A1BB42E710B3700ECD643 /* water.tga */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,8 +51,8 @@
 		3AF7E9C11EB64A46003BB06D /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		3AF7E9C81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AF7E9F81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB5A1BB42E710B3700ECD643 /* water.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = water.tga; sourceTree = "<group>"; };
 		E66DD56C898453906829F0E1 /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
-		EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Hawaii-coastline.tga"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -182,7 +182,7 @@
 		EBC87E812DD426F70029F8FA /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				EBC87E862DD4296E0029F8FA /* Hawaii-coastline.tga */,
+				AB5A1BB42E710B3700ECD643 /* water.tga */,
 			);
 			path = Assets;
 			sourceTree = "<group>";
@@ -271,7 +271,7 @@
 			files = (
 				3A1E2DFF1F71B23900A7B165 /* Main.storyboard in Resources */,
 				3A1E2DFE1F71B23900A7B165 /* LaunchScreen.storyboard in Resources */,
-				EBC87E872DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */,
+				AB5A1BB52E710B3700ECD643 /* water.tga in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -280,7 +280,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3A1E2E081F71B25900A7B165 /* Main.storyboard in Resources */,
-				EBC87E892DD4296E0029F8FA /* Hawaii-coastline.tga in Resources */,
+				AB5A1BB62E710B3700ECD643 /* water.tga in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

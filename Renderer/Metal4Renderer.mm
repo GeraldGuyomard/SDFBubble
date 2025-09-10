@@ -318,7 +318,8 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 /// Loads two textures the app combines into the source color texture.
 - (void) createTextures
 {
-    NSString *backgroundImageFileName = @"Hawaii-coastline";
+    //NSString *backgroundImageFileName = @"Hawaii-coastline";
+    NSString *backgroundImageFileName = @"water";
     // Create a texture from the background image file.
     NSURL *backgroundImageFile = [[NSBundle mainBundle]
                                 URLForResource:backgroundImageFileName

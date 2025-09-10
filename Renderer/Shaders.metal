@@ -103,8 +103,10 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     c += half4 { luminosity, luminosity, luminosity, 0.f };
     
     // specular
-    const half specularStrength = computeSDFStrength(sdf, 0.25e-1f, 1.f);
-    if (specularStrength >= 0.05f)
+    half specularStrength = computeSDFStrength(sdf, 0.25e-1f, 1.f);
+    specularStrength = smoothstep(half(0.f), half(1.f), specularStrength);
+    
+    if (specularStrength != 0.f)
     {
         const float d = abs(dot(gradient, uniforms->lightDirection));
         const float specularCoeff = specularStrength * pow(d, 10.f);
