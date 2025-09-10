@@ -90,7 +90,7 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     
     if (gradientStrength >= 0.025f)
     {
-        const float2 v = gradient * uniforms->gradientScale * 1e1f;
+        const float2 v = gradient * uniforms->gradientScale;
         const auto refractionPos = in.textureCoordinate + v;
         const auto refractionColor = colorTexture.sample(textureSampler, refractionPos);
         
@@ -101,6 +101,17 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     
     const half luminosity = computeSDFStrength(sdf, 1e-1f, 0.8f);
     c += half4 { luminosity, luminosity, luminosity, 0.f };
+    
+    // specular
+    const half specularStrength = computeSDFStrength(sdf, 0.25e-1f, 1.f);
+    if (specularStrength >= 0.05f)
+    {
+        const float d = abs(dot(gradient, uniforms->lightDirection));
+        const float specularCoeff = specularStrength * pow(d, 10.f);
+        
+        const auto specularColor = half4 { 1.f, 1.f, 1.f, 0.f } * specularCoeff;
+        c += specularColor;
+    }
     
     // Pass the texture color to the rasterizer.
     return (float4) c;

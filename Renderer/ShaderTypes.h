@@ -98,6 +98,7 @@ struct Uniforms final
 {
     float2 viewportSize;
     float2 gradientScale;
+    float2 lightDirection;
     size_t nbBubbleGroups;
     
     BubbleGroup groups[1024];

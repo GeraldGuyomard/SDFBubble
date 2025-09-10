@@ -621,9 +621,12 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     
     buf->viewportSize = viewportSize;
     
-    const float2 gradientScale { 1.f / float(sdfGradientTexture.width), 1.f / float(sdfGradientTexture.height) };
+    constexpr float s = 3e1f;
+    const float2 gradientScale { s / float(sdfGradientTexture.width), s / float(sdfGradientTexture.height) };
     
     buf->gradientScale = gradientScale;
+    
+    buf->lightDirection = normalize(float2{1.f, -1.f});
     
     std::vector<BubbleGroup> bubbleGroups;
     std::vector<Bubble> bubbles;
