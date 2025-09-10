@@ -56,6 +56,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     /// The app compiles the pipeline with the compute kernel in the
     /// `AAPLShaders.metal` source code file.
     id<MTLComputePipelineState> drawSDFPipelineState;
+    id<MTLComputePipelineState> drawSDFGradientPipelineState;
     
     /// A render pipeline the app creates at runtime.
     ///
@@ -95,6 +96,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     /// `chyronTexture`, which becomes the input texture for the grayscale conversion.
     id<MTLTexture> backgroundImageTexture;
     id<MTLTexture> sdfTexture;
+    id<MTLTexture> sdfGradientTexture;
     id<MTLTexture> offscreenTexture;
 
     /// A two-dimensional size that represents the number of threads for each
@@ -342,14 +344,20 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     textureDescriptor.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
     offscreenTexture = [device newTextureWithDescriptor:textureDescriptor];
     NSAssert(nil != offscreenTexture,
-             @"The device can't create a texture for the composite color image.");
+             @"The device can't create a texture for the offscreen.");
     offscreenTexture.label = @"Offscreen Texture";
     
     textureDescriptor.pixelFormat = MTLPixelFormatR16Float;
     sdfTexture = [device newTextureWithDescriptor:textureDescriptor];
     NSAssert(nil != sdfTexture,
-             @"The device can't create a texture for the composite color image.");
+             @"The device can't create a texture for the SDF.");
     sdfTexture.label = @"SDF Texture";
+    
+    textureDescriptor.pixelFormat = MTLPixelFormatRGBA8Sint;
+    sdfGradientTexture = [device newTextureWithDescriptor:textureDescriptor];
+    NSAssert(nil != sdfGradientTexture,
+             @"The device can't create a texture for the gradient.");
+    sdfGradientTexture.label = @"SDF Gradient Texture";
     
     
 }
@@ -386,7 +394,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     // Configure the descriptor to store 2 buffers:
     // - A vertex buffer
     // - A viewport size buffer.
-    argumentTableDescriptor.maxTextureBindCount = 3;
+    argumentTableDescriptor.maxTextureBindCount = 4;
     argumentTableDescriptor.maxBufferBindCount = 2;
 
     // Create an argument table with the descriptor.
@@ -425,6 +433,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [residencySet addAllocation:backgroundImageTexture];
     [residencySet addAllocation:offscreenTexture];
     [residencySet addAllocation:sdfTexture];
+    [residencySet addAllocation:sdfGradientTexture];
     [residencySet addAllocation:vertexDataBuffer];
     [residencySet addAllocation:uniformsBuffer];
     [residencySet commit];
@@ -501,6 +510,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     [self createCompiler];
     
     drawSDFPipelineState = [self createComputePipelineStateWithFunctionName:@"computeAndDrawSDF"];
+    drawSDFGradientPipelineState = [self createComputePipelineStateWithFunctionName:@"drawSDFGradient"];
     
     [self configureThreadgroupForComputePasses];
 
@@ -660,6 +670,25 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                    threadsPerThreadgroup:threadgroupSize];
 }
 
+- (void)drawSDFGradient:(id<MTL4ComputeCommandEncoder>)computeEncoder
+{
+    [computeEncoder setComputePipelineState:drawSDFGradientPipelineState];
+    
+    // Configure the encoder's argument table for the dispatch call.
+    [computeEncoder setArgumentTable:argumentTable];
+
+    // Bind the composite color (input) texture in the argument table.
+    [argumentTable setTexture:sdfTexture.gpuResourceID
+                      atIndex:ComputeTextureBindingIndexForSDF];
+    
+    [argumentTable setTexture:sdfGradientTexture.gpuResourceID
+                      atIndex:ComputeTextureBindingIndexForGradientSDF];
+    
+    // Run the dispatch with the pipeline state and current state of the argument table.
+    [computeEncoder dispatchThreadgroups:threadgroupCount
+                   threadsPerThreadgroup:threadgroupSize];
+}
+
 - (void)encodeBackgroundTextureCopy:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
     // Configure the next copy command to use the entire background texture.
@@ -711,6 +740,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
                             visibilityOptions:MTL4VisibilityOptionDevice];
 
     [self drawSDFs:computeEncoder];
+    [self drawSDFGradient:computeEncoder];
 }
 
 - (void)encodeRenderPassWithEncoder:(id<MTL4RenderCommandEncoder>)renderEncoder
@@ -753,6 +783,9 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
     [argumentTable setTexture:sdfTexture.gpuResourceID
                       atIndex:SDFTextureBindingIndex];
+    
+    [argumentTable setTexture:sdfGradientTexture.gpuResourceID
+                      atIndex:SDFGradientTextureBindingIndex];
     
     // Draw the first rectangle with the color composite texture.
     const NSUInteger firstRectangleOffset = 0;

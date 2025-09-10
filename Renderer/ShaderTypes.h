@@ -52,9 +52,13 @@ enum TextureBindingIndex
     /// An index of a color texture for a compute kernel in a compute pass.
     ComputeTextureBindingIndexForSDF = 2,
 
+    // gradient
+    ComputeTextureBindingIndexForGradientSDF = 3,
+    
     /// An index of a texture for a fragment shader in a render pass.
     RenderTextureBindingIndex = 0,
     SDFTextureBindingIndex = 1,
+    SDFGradientTextureBindingIndex = 2
 };
 
 /// A type that defines the data layout for a triangle vertex,
@@ -188,4 +192,24 @@ computeAndDrawSDF(TTextureAccessor accessor, SHADER_CONSTANT Uniforms* uniforms)
         
         bubbles += group.nbBubbles;
     }
+}
+
+template <typename TAccessorIn, typename TAccessorOut>
+void drawSDFGradient(TAccessorIn sdfAccessorIn, TAccessorOut gradientAccessorOut)
+{
+    const auto gridId = gradientAccessorOut.gridId();
+    
+    const auto left = sdfAccessorIn.read({gridId.x - 1, gridId.y});
+    const auto right = sdfAccessorIn.read({gridId.x + 1, gridId.y});
+    const auto dX = (right - left) / 2.f;
+    
+    const auto top = sdfAccessorIn.read({gridId.x, gridId.y - 1});
+    const auto bottom = sdfAccessorIn.read({gridId.x, gridId.y + 1});
+    const auto dY = (bottom - top) / 2.f;
+    
+    const auto distance = sdfAccessorIn.read(gridId);
+    const float4 distanceAndGradient { distance, dX, dY, 0.f };
+    
+    gradientAccessorOut.writeFloat4(distanceAndGradient);
+    
 }

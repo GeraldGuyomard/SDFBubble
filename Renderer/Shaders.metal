@@ -64,7 +64,8 @@ vertexShader(uint                   vertexID              [[ vertex_id ]],
 /// texture coordinates.
 fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
                                texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]],
-                               texture2d<half> sdfTexture [[ texture(SDFTextureBindingIndex) ]])
+                               texture2d<half> sdfTexture [[ texture(SDFTextureBindingIndex) ]],
+                               texture2d<half> sdfGradientTexture [[ texture(SDFGradientTextureBindingIndex) ]])
 {
     /// A basic texture sampler with linear filter settings.
     constexpr sampler textureSampler (mag_filter::linear,
@@ -84,15 +85,27 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     return (float4) c;
 }
 
+template <typename TPixel, metal::access TAccess>
 class MetalTextureAccessor final
 {
 public:
+    using TTexture = texture2d<TPixel, TAccess>;
     
-    MetalTextureAccessor(texture2d<half, access::write> texture, uint2 gridId)
+    MetalTextureAccessor(TTexture texture, uint2 gridId)
     : _texture(texture), _gridId(gridId)
     {}
     
-    void write(half v)
+    TPixel read(uint2 pos)
+    {
+        return _texture.read(pos).r;
+    }
+    
+    void write(TPixel v) const
+    {
+        _texture.write(v, _gridId);
+    }
+    
+    void writeFloat4(float4 v) const
     {
         _texture.write(v, _gridId);
     }
@@ -107,8 +120,13 @@ public:
         return { float(_gridId.x), float(_gridId.y) };
     }
     
+    uint2 gridId() const
+    {
+        return _gridId;
+    }
+    
 private:
-    texture2d<half, access::write> _texture;
+    TTexture _texture;
     uint2 _gridId;
 };
 
@@ -121,4 +139,14 @@ computeAndDrawSDF(texture2d<half, access::write> texture [[texture(ComputeTextur
     MetalTextureAccessor accessor { texture, gridId };
     
     computeAndDrawSDF(accessor, uniforms);
+}
+
+kernel void drawSDFGradient(texture2d<half, access::read> sdfTextureIn [[texture(ComputeTextureBindingIndexForSDF)]],
+                            texture2d<float, access::write> sdfGradientTextureOut [[texture(ComputeTextureBindingIndexForGradientSDF)]],
+                            uint2 gridId     [[thread_position_in_grid]])
+{
+    MetalTextureAccessor accessorIn { sdfTextureIn, gridId };
+    MetalTextureAccessor accessorOut { sdfGradientTextureOut, gridId };
+    
+    drawSDFGradient(accessorIn, accessorOut);
 }
