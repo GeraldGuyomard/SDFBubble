@@ -457,6 +457,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E66DD56C898453906829F0E1 /* SampleCode.xcconfig */;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				DEVELOPMENT_TEAM = 4EUCTF8UFR;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -482,6 +483,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E66DD56C898453906829F0E1 /* SampleCode.xcconfig */;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				DEVELOPMENT_TEAM = 4EUCTF8UFR;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;

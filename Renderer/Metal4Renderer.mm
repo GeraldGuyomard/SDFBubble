@@ -18,6 +18,7 @@ A platform-independent Metal renderer implementation that sets up the app's
 #include <algorithm>
 #include <vector>
 #include <set>
+#include <optional>
 
 // The shader types header that defines the input data types for the app's shaders.
 // The types define a common data format for both
@@ -71,8 +72,53 @@ public:
         return nullptr;
     }
     
+    void setSelection(Bubble& bubble, const float2& initialHitInSDFSpace)
+    {
+        _selection = Selection { bubble, initialHitInSDFSpace };
+    }
+    
+    void clearSelection()
+    {
+        _selection.reset();
+    }
+    
+    void moveSelection(const float2& pt)
+    {
+        if (_selection.has_value())
+        {
+            const auto delta = pt - _selection->initialHitInSDFSpace;
+            _selection->bubble->origin = _selection->initialOrigin + delta;
+        }
+    }
+    
+    void rescaleSelection(float scale)
+    {
+        if (_selection.has_value())
+        {
+            _selection->bubble->radius = _selection->initialRadius * scale;
+        }
+    }
+    
 private:
     std::vector<Bubble> _bubbles;
+    
+    struct Selection final
+    {
+        Selection(Bubble& bubble, const float2& initialHitInSDFSpace)
+        : bubble(&bubble),
+        initialOrigin(bubble.origin),
+        initialRadius(bubble.radius),
+        initialHitInSDFSpace(initialHitInSDFSpace)
+        {}
+        
+        Bubble* bubble;
+        float2 initialOrigin;
+        float initialRadius;
+        
+        float2 initialHitInSDFSpace;
+    };
+    
+    std::optional<Selection> _selection;
 };
 
 @interface Metal4Renderer()
@@ -164,8 +210,6 @@ private:
     id<MTLBuffer> uniformsBuffer;
     
     BubbleSet _bubbleSet;
-    Bubble* movingBubble;
-    float initialMovingBubbleRadius;
     
     UIPanGestureRecognizer* panGestureRecognizer;
     UITapGestureRecognizer* tapGestureRecognizer;
@@ -939,30 +983,34 @@ private:
 {
     const auto p = [recognizer locationInView:view];
     const float2 pos { float(p.x), float(p.y) };
+    const auto ptInSDFSpace = [self pointInSDFSpace:pos];
     
     switch(recognizer.state)
     {
         case UIGestureRecognizerStateBegan:
         {
-            movingBubble = [self pick:pos];
+            if (auto bubble = [self pick:pos])
+            {
+                _bubbleSet.setSelection(*bubble, ptInSDFSpace);
+            }
+            else
+            {
+                _bubbleSet.clearSelection();
+            }
+            
             break;
         }
             
         case UIGestureRecognizerStateChanged:
         {
-            if (movingBubble != nullptr)
-            {
-                const auto pt = [self pointInSDFSpace:pos];
-                movingBubble->origin = pt;
-            }
-            
+            _bubbleSet.moveSelection(ptInSDFSpace);
             break;
         }
             
         case UIGestureRecognizerStateEnded:
         case UIGestureRecognizerStateCancelled:
         {
-            movingBubble = nullptr;
+            _bubbleSet.clearSelection();
             break;
         }
             
@@ -1040,35 +1088,33 @@ private:
 {
     const auto p = [recognizer locationInView:view];
     const float2 pos { float(p.x), float(p.y) };
+    const auto posInSDFSpace = [self pointInSDFSpace:pos];
     
     switch(recognizer.state)
     {
         case UIGestureRecognizerStateBegan:
         {
-            movingBubble = [self pick:pos];
-            if (movingBubble != nullptr)
+            if (auto bubble = _bubbleSet.pick(posInSDFSpace))
             {
-                initialMovingBubbleRadius = movingBubble->radius;
+                _bubbleSet.setSelection(*bubble, posInSDFSpace);
             }
-            
+            else
+            {
+                _bubbleSet.clearSelection();
+            }
             break;
         }
             
         case UIGestureRecognizerStateChanged:
         {
-            if (movingBubble != nullptr)
-            {
-                const float s = recognizer.scale;
-                movingBubble->radius = initialMovingBubbleRadius * s;
-            }
-            
+            _bubbleSet.rescaleSelection(recognizer.scale);
             break;
         }
             
         case UIGestureRecognizerStateEnded:
         case UIGestureRecognizerStateCancelled:
         {
-            movingBubble = nullptr;
+            _bubbleSet.clearSelection();
             break;
         }
             
