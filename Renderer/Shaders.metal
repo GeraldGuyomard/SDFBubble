@@ -87,7 +87,7 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     // refractions
     const float2 gradient { distanceAndGradient.y, distanceAndGradient.z };
     half gradientStrength = computeSDFStrength(sdf, 1e-2f, 0.8f);
-    gradientStrength = smoothstep(half(0.f), half(1.f), gradientStrength);
+    gradientStrength = smoothstep(half(0.1f), half(1.f), gradientStrength);
     
     if (gradientStrength != 0.f)
     {
