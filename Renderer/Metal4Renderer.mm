@@ -44,6 +44,20 @@ public:
         _bubbles.push_back(b);
     }
     
+    void remove(Bubble& bubble)
+    {
+        const auto end = _bubbles.end();
+        for (auto it = _bubbles.begin(); it != end; ++it)
+        {
+            auto& b = *it;
+            if (&b == &bubble)
+            {
+                _bubbles.erase(it);
+                break;
+            }
+        }
+    }
+    
     std::set<const Bubble*> allBubbles() const
     {
         std::set<const Bubble*> s;
@@ -1080,7 +1094,15 @@ private:
         const CGPoint ptView = [recognizer locationInView:view];
         const float2 ptSDF = [self pointInSDFSpace: float2{ float(ptView.x), float(ptView.y) }];
         
-        _bubbleSet.add(ptSDF, 100.f);
+        if (auto bubble = _bubbleSet.pick(ptSDF))
+        {
+            _bubbleSet.remove(*bubble);
+        }
+        else
+        {
+            // add
+            _bubbleSet.add(ptSDF, 100.f);
+        }
     }
 }
 
