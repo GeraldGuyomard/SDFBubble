@@ -80,6 +80,11 @@ struct Bubble final
 {
     float2 origin;
     float radius;
+    uint32_t id = 0;
+    
+    Bubble(float2 origin, float radius)
+    : origin(origin), radius(radius)
+    {}
     
     float computeSDF(float2 pt) SHADER_CONSTANT
     {

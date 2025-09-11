@@ -35,8 +35,11 @@ class BubbleSet final
 {
 public:
     
-    void add(const Bubble& b)
+    void add(const float2& origin, float radius)
     {
+        Bubble b { origin, radius };
+        b.id = (uint32_t) _bubbles.size();
+        
         _bubbles.push_back(b);
     }
     
@@ -614,13 +617,11 @@ private:
             for (size_t i=0; i < group.nbBubbles; ++i)
             {
                 const auto& b = oBubbles[startIndex + i];
-                const float l = length(b.origin - otherBubble->origin);
-                const float distance = std::min(distance, l);
+                const float distance = length(b.origin - otherBubble->origin);
                 
-                const float d = std::max(bubble->radius, otherBubble->radius);
-                const float minDist = 2.f * d;
+                const float minDist = b.radius + otherBubble->radius;
                 
-                minD = std::min(minD, d);
+                minD = std::min(minD, distance);
                 
                 if (distance <= minDist)
                 {
@@ -1063,10 +1064,7 @@ private:
         const CGPoint ptView = [recognizer locationInView:view];
         const float2 ptSDF = [self pointInSDFSpace: float2{ float(ptView.x), float(ptView.y) }];
         
-        _bubbleSet.add({
-            .origin = ptSDF,
-            .radius = 100.f
-        });
+        _bubbleSet.add(ptSDF, 100.f);
     }
 }
 
