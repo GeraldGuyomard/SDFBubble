@@ -91,13 +91,11 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     
     if (gradientStrength != 0.f)
     {
-        const float2 v = gradient * uniforms->gradientScale;
+        const float2 v = gradientStrength * uniforms->gradientScale;
         const auto refractionPos = in.textureCoordinate + v;
         const auto refractionColor = colorTexture.sample(textureSampler, refractionPos);
         
         c = refractionColor;
-        //c = half4 { 1.f, 0.f, 0.f, 1.f };
-        //c = mix(colorSample, refractionColor, gradientStrength);
     }
     
     const half luminosity = computeSDFStrength(sdf, 1e-1f, 0.8f);
