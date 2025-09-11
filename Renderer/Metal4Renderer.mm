@@ -141,7 +141,6 @@ private:
     id<MTLTexture> backgroundImageTexture;
     id<MTLTexture> sdfTexture;
     id<MTLTexture> sdfGradientTexture;
-    id<MTLTexture> offscreenTexture;
 
     /// A two-dimensional size that represents the number of threads for each
     /// grid dimension of a threadgroup for a compute kernel dispatch.
@@ -323,7 +322,7 @@ private:
 
 - (void) createBuffers
 {
-    const float2 contentSize { float(offscreenTexture.width), float(offscreenTexture.height) };
+    const float2 contentSize { float(backgroundImageTexture.width), float(backgroundImageTexture.height) };
     const float2 vSize { float(viewportSize.x), float(viewportSize.y) };
     
     const float2 s = vSize / contentSize;
@@ -387,10 +386,6 @@ private:
     // Configure the input texture to read-only because `convertToGrayscale` kernel
     // doesn't modify it.
     textureDescriptor.usage = MTLTextureUsageShaderWrite | MTLTextureUsageShaderRead;
-    offscreenTexture = [device newTextureWithDescriptor:textureDescriptor];
-    NSAssert(nil != offscreenTexture,
-             @"The device can't create a texture for the offscreen.");
-    offscreenTexture.label = @"Offscreen Texture";
     
     textureDescriptor.pixelFormat = MTLPixelFormatR16Float;
     sdfTexture = [device newTextureWithDescriptor:textureDescriptor];
@@ -413,17 +408,17 @@ private:
 /// entire image.
 - (void) configureThreadgroupForComputePasses
 {
-    NSAssert(offscreenTexture, @"Create the composite color texture before configuring the threadgroup");
+    NSAssert(backgroundImageTexture, @"Create the composite color texture before configuring the threadgroup");
 
     // Set the compute kernel's threadgroup size to 16 x 16.
     threadgroupSize = MTLSizeMake(16, 16, 1);
 
     // Find the number of threadgroup widths the app needs to span the texture's full width.
-    threadgroupCount.width  = offscreenTexture.width  + threadgroupSize.width -  1;
+    threadgroupCount.width  = backgroundImageTexture.width  + threadgroupSize.width -  1;
     threadgroupCount.width /= threadgroupSize.width;
 
     // Find the number of threadgroup heights the app needs to span the texture's full width.
-    threadgroupCount.height = offscreenTexture.height + threadgroupSize.height - 1;
+    threadgroupCount.height = backgroundImageTexture.height + threadgroupSize.height - 1;
     threadgroupCount.height /= threadgroupSize.height;
 
     // Set depth to one because the image data is two-dimensional.
@@ -476,7 +471,6 @@ private:
 
     // Add the communal resources to the residency set.
     [residencySet addAllocation:backgroundImageTexture];
-    [residencySet addAllocation:offscreenTexture];
     [residencySet addAllocation:sdfTexture];
     [residencySet addAllocation:sdfGradientTexture];
     [residencySet addAllocation:vertexDataBuffer];
@@ -735,29 +729,6 @@ private:
                    threadsPerThreadgroup:threadgroupSize];
 }
 
-- (void)encodeBackgroundTextureCopy:(id<MTL4ComputeCommandEncoder>)computeEncoder
-{
-    // Configure the next copy command to use the entire background texture.
-    MTLSize backgroundImageSize;
-    backgroundImageSize.width = backgroundImageTexture.width;
-    backgroundImageSize.height = backgroundImageTexture.height;
-    backgroundImageSize.depth = 1;
-
-    // Copy the background image below the chyron.
-    MTLOrigin destinationOrigin = zeroOrigin;
-
-    // Encode a command that copies the background texture onto the color texture.
-    [computeEncoder copyFromTexture:backgroundImageTexture
-                        sourceSlice:0
-                        sourceLevel:0
-                       sourceOrigin:zeroOrigin
-                         sourceSize:backgroundImageSize
-                          toTexture:offscreenTexture
-                   destinationSlice:0
-                   destinationLevel:0
-                  destinationOrigin:destinationOrigin];
-}
-
 /// Adds two copy commands and a dispatch command to the compute pass.
 ///
 /// - Parameter computeEncoder: A compute encoder, which creates a single compute pass.
@@ -776,9 +747,6 @@ private:
 /// the method encodes an intrapass barrier that enforces that ordering.
 - (void)encodeComputePassWithEncoder:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
-    // Copy the background image texture to the color composite texture.
-    [self encodeBackgroundTextureCopy:computeEncoder];
-
     // Add a barrier that pauses the dispatch stage of the compute pass
     // from starting until the copy commands finish during their blit stage.
     [computeEncoder barrierAfterEncoderStages:MTLStageBlit
@@ -824,7 +792,7 @@ private:
                       atIndex:BufferBindingIndexForUniforms];
 
     // Bind the color composite texture.
-    [argumentTable setTexture:offscreenTexture.gpuResourceID
+    [argumentTable setTexture:backgroundImageTexture.gpuResourceID
                       atIndex:RenderTextureBindingIndex];
     
     [argumentTable setTexture:sdfGradientTexture.gpuResourceID
@@ -1049,7 +1017,7 @@ private:
         
         const uint2 pos { uint32_t(ptSDF.x), uint32_t(ptSDF.y) };
         
-        CPUTextureAccessor accessor { offscreenTexture, pos };
+        CPUTextureAccessor accessor { backgroundImageTexture, pos };
         computeAndDrawSDF(accessor, uniforms);
         
         const auto value = accessor.value();
