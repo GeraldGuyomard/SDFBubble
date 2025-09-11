@@ -29,7 +29,48 @@ using namespace simd;
 
 static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 
-#define kMaxFramesInFlight 3
+constexpr uint32_t kMaxFramesInFlight = 3;
+
+class BubbleSet final
+{
+public:
+    
+    void add(const Bubble& b)
+    {
+        _bubbles.push_back(b);
+    }
+    
+    std::set<const Bubble*> allBubbles() const
+    {
+        std::set<const Bubble*> s;
+        
+        for (const auto& b : _bubbles)
+        {
+            s.insert(&b);
+        }
+        
+        return s;
+    }
+    
+    Bubble* pick(const float2& pos)
+    {
+        const size_t n = _bubbles.size();
+        for (size_t i=0; i < n; ++i)
+        {
+            Bubble& bubble = _bubbles[i];
+            const float d = bubble.computeSDF(pos);
+            if (d <= 0.f)
+            {
+                return &bubble;
+            }
+        }
+        
+        return nullptr;
+    }
+    
+private:
+    std::vector<Bubble> _bubbles;
+};
 
 @interface Metal4Renderer()
 @end
@@ -120,7 +161,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     ///
     id<MTLBuffer> uniformsBuffer;
     
-    std::vector<Bubble> _bubbles;
+    BubbleSet _bubbleSet;
     Bubble* movingBubble;
     float initialMovingBubbleRadius;
     
@@ -547,12 +588,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
     oBubbles.clear();
     
     // brute force N square comparison
-    std::set<const Bubble*> bubbles;
-    
-    for (const auto& b : _bubbles)
-    {
-        bubbles.insert(&b);
-    }
+    auto bubbles = _bubbleSet.allBubbles();
     
     while (!bubbles.empty())
     {
@@ -927,19 +963,7 @@ static const MTLOrigin zeroOrigin = { 0, 0, 0 };
 - (Bubble*)pick:(float2)pos
 {
     const auto p = [self pointInSDFSpace:pos];
-    
-    const size_t n = _bubbles.size();
-    for (size_t i=0; i < n; ++i)
-    {
-        Bubble& bubble = _bubbles[i];
-        const float d = bubble.computeSDF(p);
-        if (d <= 0.f)
-        {
-            return &bubble;
-        }
-    }
-    
-    return nullptr;
+    return _bubbleSet.pick(p);
 }
 
 - (void)onPan:(UIPanGestureRecognizer*)recognizer
@@ -1039,7 +1063,7 @@ private:
         const CGPoint ptView = [recognizer locationInView:view];
         const float2 ptSDF = [self pointInSDFSpace: float2{ float(ptView.x), float(ptView.y) }];
         
-        _bubbles.push_back({
+        _bubbleSet.add({
             .origin = ptSDF,
             .radius = 100.f
         });
