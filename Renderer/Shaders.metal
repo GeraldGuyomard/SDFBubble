@@ -91,7 +91,7 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     {
         half gradientStrength = 1.f * exp(1e-2f * sdf);
         
-        const float2 v = gradientStrength * uniforms->gradientScale;
+        const float2 v = gradient * gradientStrength * uniforms->gradientScale;
         const auto refractionPos = in.textureCoordinate + v;
         const auto refractionColor = colorTexture.sample(textureSampler, refractionPos);
         
