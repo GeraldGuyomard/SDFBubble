@@ -775,22 +775,6 @@ private:
                    threadsPerThreadgroup:threadgroupSize];
 }
 
-/// Adds two copy commands and a dispatch command to the compute pass.
-///
-/// - Parameter computeEncoder: A compute encoder, which creates a single compute pass.
-///
-/// The method first encodes two copy commands that combines two color textures
-/// into a single color composite texture.
-/// The GPU runs these commands at the same time because they write to different regions
-/// of the destination texture with no overlap.
-///
-/// > Note: The GPU runs copy commands sequentially when they write to overlapping regions
-/// of a destination.
-///
-/// The method then encodes a dispatch command that creates an grayscale equivalent
-/// of the composite color texture with a compute kernel.
-/// To prevent the GPU from starting the dispatch stage before the copy commands complete,
-/// the method encodes an intrapass barrier that enforces that ordering.
 - (void)encodeComputePassWithEncoder:(id<MTL4ComputeCommandEncoder>)computeEncoder
 {
     // Add a barrier that pauses the dispatch stage of the compute pass
