@@ -12,10 +12,6 @@
 #include <set>
 #include <optional>
 
-// The shader types header that defines the input data types for the app's shaders.
-// The types define a common data format for both
-// the `.metal` shader source code files, which run on the GPU,
-// and the code in this file, which sets up input data with Metal API on the CPU.
 #import "ShaderTypes.h"
 
 using namespace simd;
