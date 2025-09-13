@@ -87,6 +87,7 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     // refractions
     const float2 gradient { distanceAndGradient.y, distanceAndGradient.z };
     
+    //if constexpr (false)
     if (sdf < 0.f)
     {
         half gradientStrength = 1.f * exp(1e-2f * sdf);
@@ -110,9 +111,17 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
         const float d = abs(dot(gradient, uniforms->lightDirection));
         const float specularCoeff = specularStrength * pow(d, 10.f);
         
-        const auto specularColor = half4 { 1.f, 1.f, 1.f, 0.f } * specularCoeff;
-        c += specularColor;
+        if (specularCoeff > 0.f)
+        {
+            const auto specularColor = half4 { 1.f, 1.f, 1.f, 0.f } * specularCoeff;
+            c += specularColor;
+        }
     }
+    
+    /*if (sdf < 0.f)
+    {
+        c = half4 { 1.f, 0.f, 0.f, 1.f };
+    }*/
     
     // Pass the texture color to the rasterizer.
     return (float4) c;
