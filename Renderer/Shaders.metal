@@ -65,20 +65,17 @@ float computeSDFStrength(float sdf, float k, float m)
     return (sdf != 0.f) ? m * exp(sdf * k) : 0.f;
 }
 
-/// A Returns color data from the input texture by sampling it at the fragment's
-/// texture coordinates.
-fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
-                               texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]],
-                               texture2d<half> sdfGradientTexture [[ texture(SDFGradientTextureBindingIndex) ]],
-                               constant Uniforms* uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
+half3 computeColor(float2 textureCoordinate,
+                    texture2d<half> colorTexture,
+                    texture2d<half> sdfGradientTexture,
+                    constant Uniforms& uniforms)
 {
-    /// A basic texture sampler with linear filter settings.
     constexpr sampler textureSampler (mag_filter::linear,
                                       min_filter::linear);
 
-    const half4 colorSample = colorTexture.sample (textureSampler, in.textureCoordinate);
+    const half3 colorSample = colorTexture.sample (textureSampler, textureCoordinate).xyz;
     
-    const half4 distanceAndGradient = sdfGradientTexture.sample (textureSampler, in.textureCoordinate);
+    const half4 distanceAndGradient = sdfGradientTexture.sample (textureSampler, textureCoordinate);
     
     auto c = colorSample;
     
@@ -92,15 +89,15 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     {
         half gradientStrength = 1.f * exp(1e-2f * sdf);
         
-        const float2 v = gradient * gradientStrength * uniforms->gradientScale;
-        const auto refractionPos = in.textureCoordinate + v;
-        const auto refractionColor = colorTexture.sample(textureSampler, refractionPos);
+        const float2 v = gradient * gradientStrength * uniforms.gradientScale;
+        const auto refractionPos = textureCoordinate + v;
+        const auto refractionColor = colorTexture.sample(textureSampler, refractionPos).xyz;
         
         c = refractionColor;
     }
     
     const half luminosity = computeSDFStrength(sdf, 1e-1f, 0.8f);
-    c += half4 { luminosity, luminosity, luminosity, 0.f };
+    c += half3 { luminosity, luminosity, luminosity };
     
     // specular
     half specularStrength = computeSDFStrength(sdf, 0.25e-1f, 1.f);
@@ -108,23 +105,48 @@ fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
     
     if (specularStrength != 0.f)
     {
-        const float d = abs(dot(gradient, uniforms->lightDirection));
+        const float d = abs(dot(gradient, uniforms.lightDirection));
         const float specularCoeff = specularStrength * pow(d, 10.f);
         
         if (specularCoeff > 0.f)
         {
-            const auto specularColor = half4 { 1.f, 1.f, 1.f, 0.f } * specularCoeff;
+            const auto specularColor = half3 { 1.f, 1.f, 1.f } * specularCoeff;
             c += specularColor;
         }
     }
     
+    // debug red
     /*if (sdf < 0.f)
     {
-        c = half4 { 1.f, 0.f, 0.f, 1.f };
+        c = half3 { 1.f, 0.f, 0.f };
     }*/
     
-    // Pass the texture color to the rasterizer.
-    return (float4) c;
+    return c;
+}
+
+#define ENABLE_SUB_SAMPLING 1
+
+/// A Returns color data from the input texture by sampling it at the fragment's
+/// texture coordinates.
+fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
+                               texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]],
+                               texture2d<half> sdfGradientTexture [[ texture(SDFGradientTextureBindingIndex) ]],
+                               constant Uniforms& uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
+{
+#if ENABLE_SUB_SAMPLING
+    constexpr float kOffset = 1e-4f;
+    
+    const auto p0 = computeColor(in.textureCoordinate, colorTexture, sdfGradientTexture, uniforms);
+    const auto p1 = computeColor(in.textureCoordinate + float2 { kOffset, 0.f }, colorTexture, sdfGradientTexture, uniforms);
+    const auto p2 = computeColor(in.textureCoordinate + float2 { 0.f, kOffset }, colorTexture, sdfGradientTexture, uniforms);
+    const auto p3 = computeColor(in.textureCoordinate + float2 { kOffset, kOffset }, colorTexture, sdfGradientTexture, uniforms);
+    
+    const auto p = (p0 + p1 + p2 + p3) * 0.25f;
+    return float4 { p.r, p.g, p.b, 1.f };
+#else
+    const auto c = computeColor(in.textureCoordinate, colorTexture, sdfGradientTexture, uniforms);
+    return float4 { c.r, c.g, c.b, 1.f };
+#endif
 }
 
 template <typename TPixel, metal::access TAccess>
