@@ -49,7 +49,7 @@
 		3AF7E9BF1EB64A46003BB06D /* Metal4Renderer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Metal4Renderer.mm; sourceTree = "<group>"; };
 		3AF7E9C01EB64A46003BB06D /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
 		3AF7E9C11EB64A46003BB06D /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		3AF7E9C81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3AF7E9C81EB64A46003BB06D /* Bubbles.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bubbles.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AF7E9F81EB64A46003BB06D /* Texture Compute.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Texture Compute.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB5A1BB42E710B3700ECD643 /* water.tga */ = {isa = PBXFileReference; lastKnownFileType = file; path = water.tga; sourceTree = "<group>"; };
 		E66DD56C898453906829F0E1 /* SampleCode.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = SampleCode.xcconfig; path = Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
@@ -147,7 +147,7 @@
 		3AF7E9C91EB64A46003BB06D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3AF7E9C81EB64A46003BB06D /* Texture Compute.app */,
+				3AF7E9C81EB64A46003BB06D /* Bubbles.app */,
 				3AF7E9F81EB64A46003BB06D /* Texture Compute.app */,
 			);
 			name = Products;
@@ -190,9 +190,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3AF7E9C71EB64A46003BB06D /* iOS - Texture Compute */ = {
+		3AF7E9C71EB64A46003BB06D /* iOS - Bubbles */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3AF7EA1B1EB64A46003BB06D /* Build configuration list for PBXNativeTarget "iOS - Texture Compute" */;
+			buildConfigurationList = 3AF7EA1B1EB64A46003BB06D /* Build configuration list for PBXNativeTarget "iOS - Bubbles" */;
 			buildPhases = (
 				3AF7E9C41EB64A46003BB06D /* Sources */,
 				3AF7E9C51EB64A46003BB06D /* Frameworks */,
@@ -202,14 +202,14 @@
 			);
 			dependencies = (
 			);
-			name = "iOS - Texture Compute";
+			name = "iOS - Bubbles";
 			productName = iOS;
-			productReference = 3AF7E9C81EB64A46003BB06D /* Texture Compute.app */;
+			productReference = 3AF7E9C81EB64A46003BB06D /* Bubbles.app */;
 			productType = "com.apple.product-type.application";
 		};
-		3AF7E9F71EB64A46003BB06D /* macOS - Texture Compute */ = {
+		3AF7E9F71EB64A46003BB06D /* macOS - Bubbles */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3AF7EA211EB64A46003BB06D /* Build configuration list for PBXNativeTarget "macOS - Texture Compute" */;
+			buildConfigurationList = 3AF7EA211EB64A46003BB06D /* Build configuration list for PBXNativeTarget "macOS - Bubbles" */;
 			buildPhases = (
 				3AF7E9F41EB64A46003BB06D /* Sources */,
 				3AF7E9F51EB64A46003BB06D /* Frameworks */,
@@ -219,7 +219,7 @@
 			);
 			dependencies = (
 			);
-			name = "macOS - Texture Compute";
+			name = "macOS - Bubbles";
 			productName = macOS;
 			productReference = 3AF7E9F81EB64A46003BB06D /* Texture Compute.app */;
 			productType = "com.apple.product-type.application";
@@ -244,7 +244,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 3AF7E9BB1EB64A46003BB06D /* Build configuration list for PBXProject "DemoSDFCompute" */;
+			buildConfigurationList = 3AF7E9BB1EB64A46003BB06D /* Build configuration list for PBXProject "Bubbles" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -258,8 +258,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3AF7E9C71EB64A46003BB06D /* iOS - Texture Compute */,
-				3AF7E9F71EB64A46003BB06D /* macOS - Texture Compute */,
+				3AF7E9C71EB64A46003BB06D /* iOS - Bubbles */,
+				3AF7E9F71EB64A46003BB06D /* macOS - Bubbles */,
 			);
 		};
 /* End PBXProject section */
@@ -471,8 +471,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geraldguyomard.DemoSDF;
-				PRODUCT_NAME = "Texture Compute";
+				PRODUCT_BUNDLE_IDENTIFIER = com.geraldguyomard.Bubbles;
+				PRODUCT_NAME = Bubbles;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -494,8 +494,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geraldguyomard.DemoSDF;
-				PRODUCT_NAME = "Texture Compute";
+				PRODUCT_BUNDLE_IDENTIFIER = com.geraldguyomard.Bubbles;
+				PRODUCT_NAME = Bubbles;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -510,7 +510,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 4EUCTF8UFR;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -523,7 +523,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.apple-samplecode.HelloCompute${SAMPLE_CODE_DISAMBIGUATOR}";
+				PRODUCT_BUNDLE_IDENTIFIER = com.geraldguyomard.bubbles;
 				PRODUCT_NAME = "Texture Compute";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
@@ -537,7 +537,7 @@
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 4EUCTF8UFR;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = TARGET_MACOS;
@@ -547,7 +547,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.apple-samplecode.HelloCompute${SAMPLE_CODE_DISAMBIGUATOR}";
+				PRODUCT_BUNDLE_IDENTIFIER = com.geraldguyomard.bubbles;
 				PRODUCT_NAME = "Texture Compute";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
@@ -557,7 +557,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3AF7E9BB1EB64A46003BB06D /* Build configuration list for PBXProject "DemoSDFCompute" */ = {
+		3AF7E9BB1EB64A46003BB06D /* Build configuration list for PBXProject "Bubbles" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3AF7EA191EB64A46003BB06D /* Debug */,
@@ -566,7 +566,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3AF7EA1B1EB64A46003BB06D /* Build configuration list for PBXNativeTarget "iOS - Texture Compute" */ = {
+		3AF7EA1B1EB64A46003BB06D /* Build configuration list for PBXNativeTarget "iOS - Bubbles" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3AF7EA1C1EB64A46003BB06D /* Debug */,
@@ -575,7 +575,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3AF7EA211EB64A46003BB06D /* Build configuration list for PBXNativeTarget "macOS - Texture Compute" */ = {
+		3AF7EA211EB64A46003BB06D /* Build configuration list for PBXNativeTarget "macOS - Bubbles" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3AF7EA221EB64A46003BB06D /* Debug */,
