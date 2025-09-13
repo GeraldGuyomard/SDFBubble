@@ -5,3 +5,5 @@
 - SDF grid and gradient computed with compute shaders
 - Final rendering using a simple screen size quad and a fragment shader relying on the background image and a packed sdf data (distance, gradient)
 - maximum reuse of C++ code shared between CPU (Objective-C++) and GPU (MSL) to share uniforms and enabling step-by-step debugging of shader code on CPU
+
+![Screenshot](screenshot.jpg)
