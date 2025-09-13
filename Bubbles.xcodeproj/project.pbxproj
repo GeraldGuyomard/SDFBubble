@@ -28,7 +28,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		02D5008DC152F758D2A54945 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		3A1E2DE41F71B22000A7B165 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		3A1E2DE61F71B22000A7B165 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		3A1E2DE71F71B22000A7B165 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -128,7 +127,6 @@
 				3ABBACE21F7314A50080C72C /* Frameworks */,
 				3AF7E9C91EB64A46003BB06D /* Products */,
 				43817CB9761EADFF77BAE565 /* Configuration */,
-				9A5A5B7CCF4506D3C7E7A2C4 /* LICENSE */,
 			);
 			sourceTree = "<group>";
 		};
@@ -159,15 +157,6 @@
 				E66DD56C898453906829F0E1 /* SampleCode.xcconfig */,
 			);
 			name = Configuration;
-			sourceTree = "<group>";
-		};
-		9A5A5B7CCF4506D3C7E7A2C4 /* LICENSE */ = {
-			isa = PBXGroup;
-			children = (
-				02D5008DC152F758D2A54945 /* LICENSE.txt */,
-			);
-			name = LICENSE;
-			path = .;
 			sourceTree = "<group>";
 		};
 		EB2678222DF11C6D00A96775 /* Utility */ = {
