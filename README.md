@@ -7,3 +7,10 @@
 - maximum reuse of C++ code shared between CPU (Objective-C++) and GPU (MSL) to share uniforms and enabling step-by-step debugging of shader code on CPU
 
 ![Screenshot](screenshot.jpg)
+
+# Instructions
+
+- double tap anywhere on screen to add a new bubble
+- double tap on a bubble to remove it
+- drag a bubble to move it around
+- pinch a bubble to resize it
