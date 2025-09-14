@@ -439,7 +439,7 @@ private:
              @"The device can't create a texture for the SDF.");
     sdfTexture.label = @"SDF Texture";
     
-    textureDescriptor.pixelFormat = MTLPixelFormatRGBA32Float;
+    textureDescriptor.pixelFormat = MTLPixelFormatRGBA16Float;
     sdfGradientTexture = [device newTextureWithDescriptor:textureDescriptor];
     NSAssert(nil != sdfGradientTexture,
              @"The device can't create a texture for the gradient.");
