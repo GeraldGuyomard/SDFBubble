@@ -122,11 +122,6 @@ float opSmoothUnion( float d1, float d2, float k )
     return min(d1, d2) - h*h*0.25f/k;
 }
 
-float computeSDF(SHADER_CONSTANT Bubble& bubble1, SHADER_CONSTANT Bubble& bubble2, float smoothFactor, float2 pt)
-{
-    return opSmoothUnion(bubble1.computeSDF(pt), bubble2.computeSDF(pt), smoothFactor);
-}
-
 float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothFactor, float2 pt)
 {
     SHADER_CONSTANT Bubble* const end = bubble + nbBubbles;
@@ -141,6 +136,20 @@ float computeSDF(SHADER_CONSTANT Bubble* bubble, size_t nbBubbles, float smoothF
     return d;
 }
 
+template <int N>
+float computeSDF_N(SHADER_CONSTANT Bubble* bubble, float smoothFactor, float2 pt)
+{
+    float sdf = bubble->computeSDF(pt);
+    
+    if constexpr (N > 1)
+    {
+        const float sdf2 = computeSDF_N<N - 1>(bubble + 1, smoothFactor, pt);
+        sdf = opSmoothUnion(sdf, sdf2, smoothFactor);
+    }
+    
+    return sdf;
+}
+
 template <typename TTextureAccessor>
 bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
                     SHADER_CONSTANT Bubble* bubbles,
@@ -149,18 +158,22 @@ bool evaluateBubbleGroup(SHADER_CONSTANT BubbleGroup& group,
     const auto pt = accessor.position();
     
     float d;
-    if (group.nbBubbles == 1)
+    switch(group.nbBubbles)
     {
-        d = bubbles[0].computeSDF(pt);
-    }
-    else if (group.nbBubbles == 2)
-    {
-        d = computeSDF(bubbles[0], bubbles[1], group.smoothFactor, pt);
-    }
-    else
-    {
-        // blend
-        d = computeSDF(&bubbles[0], group.nbBubbles, group.smoothFactor, pt);
+        case 1: d = computeSDF_N<1>(bubbles, group.smoothFactor, pt); break;
+        case 2: d = computeSDF_N<2>(bubbles, group.smoothFactor, pt); break;
+        case 3: d = computeSDF_N<3>(bubbles, group.smoothFactor, pt); break;
+        case 4: d = computeSDF_N<4>(bubbles, group.smoothFactor, pt); break;
+        case 5: d = computeSDF_N<5>(bubbles, group.smoothFactor, pt); break;
+        case 6: d = computeSDF_N<6>(bubbles, group.smoothFactor, pt); break;
+        case 7: d = computeSDF_N<7>(bubbles, group.smoothFactor, pt); break;
+        case 8: d = computeSDF_N<8>(bubbles, group.smoothFactor, pt); break;
+            
+        default:
+        {
+            d = computeSDF(&bubbles[0], group.nbBubbles, group.smoothFactor, pt);
+            break;
+        }
     }
     
     if (d <= 0.f)
