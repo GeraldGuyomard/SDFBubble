@@ -46,18 +46,6 @@ public:
         }
     }
     
-    std::set<const Bubble*> allBubbles() const
-    {
-        std::set<const Bubble*> s;
-        
-        for (const auto& b : _bubbles)
-        {
-            s.insert(&b);
-        }
-        
-        return s;
-    }
-    
     Bubble* pick(const float2& pos)
     {
         const size_t n = _bubbles.size();
@@ -98,6 +86,88 @@ public:
         if (_selection.has_value())
         {
             _selection->bubble->radius = _selection->initialRadius * scale;
+        }
+    }
+    
+    void update(Uniforms& uniforms)
+    {
+        std::vector<BubbleGroup> groups;
+        
+        // brute force N square comparison
+        std::set<const Bubble*> bubblesSet;
+        for (const auto& b : _bubbles)
+        {
+            bubblesSet.insert(&b);
+        }
+        
+        std::vector<Bubble> bubbles;
+        
+        while (!bubblesSet.empty())
+        {
+            auto it = bubblesSet.begin();
+            
+            const auto* bubble = *it;
+            bubblesSet.erase(it);
+            
+            const size_t startIndex = bubbles.size();
+            bubbles.push_back(*bubble);
+            
+            BubbleGroup group;
+            group.nbBubbles = 1;
+            
+            float minD = std::numeric_limits<float>::max();
+            
+            // find all other bubbles interacting with the main bubble
+            for (auto it = bubblesSet.begin(); it != bubblesSet.end();)
+            {
+                const auto* otherBubble = *it;
+                bool coalesced = false;
+                
+                for (size_t i=0; i < group.nbBubbles; ++i)
+                {
+                    const auto& b = bubbles[startIndex + i];
+                    const float distance = length(b.origin - otherBubble->origin);
+                    
+                    const float minDist = b.radius + otherBubble->radius;
+                    
+                    minD = std::min(minD, distance);
+                    
+                    if (distance <= minDist)
+                    {
+                        ++group.nbBubbles;
+                        bubbles.push_back(*otherBubble);
+                        it = bubblesSet.erase(it);
+                        coalesced = true;
+                        break;
+                    }
+                }
+                
+                if (!coalesced)
+                {
+                    ++it;
+                }
+            }
+            
+            if (group.nbBubbles > 1)
+            {
+                group.smoothFactor = 3e3f / (1.f + minD);
+            }
+            
+            groups.push_back(group);
+        }
+        
+        const size_t nbGroups = groups.size();
+        uniforms.nbBubbleGroups = nbGroups;
+        
+        for (size_t i=0; i < nbGroups; ++i)
+        {
+            uniforms.groups[i] = groups[i];
+        }
+        
+        const size_t nbBubbles = bubbles.size();
+        for (size_t i=0; i < nbBubbles; ++i)
+        {
+            uniforms.bubbles[i] = bubbles[i];
         }
     }
     
@@ -625,69 +695,6 @@ private:
     return self;
 }
 
-- (void)computeBubbleGroups:(std::vector<BubbleGroup>&)oBubbleGroups bubbles:(std::vector<Bubble>&)oBubbles
-{
-    oBubbleGroups.clear();
-    oBubbles.clear();
-    
-    // brute force N square comparison
-    auto bubbles = _bubbleSet.allBubbles();
-    
-    while (!bubbles.empty())
-    {
-        auto it = bubbles.begin();
-        
-        const auto* bubble = *it;
-        bubbles.erase(it);
-        
-        const size_t startIndex = oBubbles.size();
-        oBubbles.push_back(*bubble);
-        
-        BubbleGroup group;
-        group.nbBubbles = 1;
-        
-        float minD = std::numeric_limits<float>::max();
-        
-        // find all other bubbles interacting with the main bubble
-        for (auto it = bubbles.begin(); it != bubbles.end();)
-        {
-            const auto* otherBubble = *it;
-            bool coalesced = false;
-            
-            for (size_t i=0; i < group.nbBubbles; ++i)
-            {
-                const auto& b = oBubbles[startIndex + i];
-                const float distance = length(b.origin - otherBubble->origin);
-                
-                const float minDist = b.radius + otherBubble->radius;
-                
-                minD = std::min(minD, distance);
-                
-                if (distance <= minDist)
-                {
-                    ++group.nbBubbles;
-                    oBubbles.push_back(*otherBubble);
-                    it = bubbles.erase(it);
-                    coalesced = true;
-                    break;
-                }
-            }
-            
-            if (!coalesced)
-            {
-                ++it;
-            }
-        }
-        
-        if (group.nbBubbles > 1)
-        {
-            group.smoothFactor = 3e3f / (1.f + minD);
-        }
-        
-        oBubbleGroups.push_back(group);
-    }
-}
-
 - (Uniforms*)uniforms
 {
     return reinterpret_cast<Uniforms*>(uniformsBuffer.contents);
@@ -706,24 +713,8 @@ private:
     
     buf->lightDirection = normalize(float2{1.f, -1.f});
     
-    std::vector<BubbleGroup> bubbleGroups;
-    std::vector<Bubble> bubbles;
+    _bubbleSet.update(*buf);
     
-    [self computeBubbleGroups:bubbleGroups bubbles:bubbles];
-    
-    const size_t nbGroups = bubbleGroups.size();
-    buf->nbBubbleGroups = nbGroups;
-    
-    for (size_t i=0; i < nbGroups; ++i)
-    {
-        buf->groups[i] = bubbleGroups[i];
-    }
-    
-    const size_t nbBubbles = bubbles.size();
-    for (size_t i=0; i < nbBubbles; ++i)
-    {
-        buf->bubbles[i] = bubbles[i];
-    }
 }
 
 /// The system calls this method whenever the view changes orientation or size.
