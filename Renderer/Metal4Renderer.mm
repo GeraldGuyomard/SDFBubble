@@ -3,6 +3,7 @@
 
 #import <Metal/MTL4RenderPass.h>
 #import "UIKit/UIKit.h"
+#import <CoreMotion/CoreMotion.h>
 
 #import "Metal4Renderer.h"
 #import "TGAImage.h"
@@ -286,6 +287,9 @@ private:
     UIPanGestureRecognizer* panGestureRecognizer;
     UITapGestureRecognizer* tapGestureRecognizer;
     UITapGestureRecognizer* doubleTapGestureRecognizer;
+    
+    CMMotionManager* motionManager;
+    float2 lightDirection;
 }
 
 /// Creates a texture instance from an image file.
@@ -692,6 +696,45 @@ private:
     auto scaleRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(onPinch:)];
     [mtkView addGestureRecognizer:scaleRecognizer];
     
+    lightDirection = normalize(float2{1.f, -1.f});
+    
+    motionManager = [CMMotionManager new];
+    motionManager.deviceMotionUpdateInterval = 1.0 / 60.0;
+    
+    if ([motionManager isDeviceMotionAvailable])
+    {
+        __weak Metal4Renderer* wSelf = self;
+        
+        // Start getting updates
+        [motionManager startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue]
+                                          withHandler:^(CMDeviceMotion *motion, NSError *error) {
+            if (error != nil)
+            {
+                return;
+            }
+
+            Metal4Renderer* self = wSelf;
+            if (self == nil)
+            {
+                return;
+            }
+             
+            float angle;
+            
+            const auto orientation = [UIDevice currentDevice].orientation;
+            if (UIDeviceOrientationIsPortrait(orientation))
+            {
+                angle = motion.attitude.roll;
+            }
+            else
+            {
+                angle = motion.attitude.yaw;
+            }
+            
+            self->lightDirection = { cosf(angle), sinf(angle) };
+            
+        }];
+    }
     return self;
 }
 
@@ -711,7 +754,7 @@ private:
     
     buf->gradientScale = gradientScale;
     
-    buf->lightDirection = normalize(float2{1.f, -1.f});
+    buf->lightDirection = lightDirection;
     
     _bubbleSet.update(*buf);
     
