@@ -1,9 +1,3 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The app's entry point for all platforms.
-*/
 
 #if defined(TARGET_IOS) || defined(TARGET_TVOS)
 #import <UIKit/UIKit.h>

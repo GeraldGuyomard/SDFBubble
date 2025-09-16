@@ -1,9 +1,3 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The interface for the renderer class, which sets up Metal renders every frame.
-*/
 
 #import <MetalKit/MetalKit.h>
 

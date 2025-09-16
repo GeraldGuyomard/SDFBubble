@@ -1,10 +1,3 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The types and enum constants the app shares with its Metal shaders and C/ObjC code.
-*/
-
 #pragma once
 
 #import <simd/simd.h>

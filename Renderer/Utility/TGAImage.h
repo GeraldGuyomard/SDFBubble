@@ -1,9 +1,3 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The interface of an image data type that parses a TGA file.
-*/
 
 #import <Foundation/Foundation.h>
 

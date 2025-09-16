@@ -1,9 +1,3 @@
-/*
-See the LICENSE.txt file for this sample’s licensing information.
-
-Abstract:
-The interface for the cross-platform view controller.
-*/
 
 #if defined(TARGET_IOS) || defined(TARGET_TVOS)
 @import UIKit;
