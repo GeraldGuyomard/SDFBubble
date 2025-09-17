@@ -56,7 +56,7 @@ vertexShader(uint                   vertexID              [[ vertex_id ]],
 
 float computeSDFStrength(float sdf, float k, float m)
 {
-    return (sdf != 0.f) ? m * exp(sdf * k) : 0.f;
+    return m * exp(sdf * k);
 }
 
 half3 computeColor(float2 textureCoordinate,
@@ -94,7 +94,7 @@ half3 computeColor(float2 textureCoordinate,
     half specularStrength = computeSDFStrength(sdf, 0.25e-1f, 1.f);
     specularStrength = smoothstep(half(0.f), half(1.f), specularStrength);
     
-    if (specularStrength != 0.f)
+    //if (specularStrength != 0.f)
     {
         const float d = abs(dot(gradient, uniforms.lightDirection));
         const float specularCoeff = specularStrength * pow(d, 10.f);
