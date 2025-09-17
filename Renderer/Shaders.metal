@@ -67,28 +67,25 @@ half3 computeColor(float2 textureCoordinate,
     constexpr sampler textureSampler (mag_filter::linear,
                                       min_filter::linear);
 
-    const half3 colorSample = colorTexture.sample (textureSampler, textureCoordinate).xyz;
-    
     const half4 distanceAndGradient = sdfGradientTexture.sample (textureSampler, textureCoordinate);
     
-    auto c = colorSample;
-    
     const float sdf = distanceAndGradient.x;
+    if (sdf >= 0.f)
+    {
+        const half3 colorSample = colorTexture.sample (textureSampler, textureCoordinate).xyz;
+        return colorSample;
+    }
     
     // refractions
     const float2 gradient { distanceAndGradient.y, distanceAndGradient.z };
     
-    //if constexpr (false)
-    if (sdf < 0.f)
-    {
-        half gradientStrength = 1.f * exp(1e-2f * sdf);
-        
-        const float2 v = gradient * gradientStrength * uniforms.gradientScale;
-        const auto refractionPos = textureCoordinate + v;
-        const auto refractionColor = colorTexture.sample(textureSampler, refractionPos).xyz;
-        
-        c = refractionColor;
-    }
+    const half gradientStrength = 1.f * exp(1e-2f * sdf);
+    
+    const float2 v = gradient * gradientStrength * uniforms.gradientScale;
+    const auto refractionPos = textureCoordinate + v;
+    const auto refractionColor = colorTexture.sample(textureSampler, refractionPos).xyz;
+    
+    auto c = refractionColor;
     
     const half luminosity = computeSDFStrength(sdf, 1e-1f, 0.8f);
     c += half3 { luminosity, luminosity, luminosity };
@@ -104,9 +101,18 @@ half3 computeColor(float2 textureCoordinate,
         
         if (specularCoeff > 0.f)
         {
-            const auto specularColor = half3 { 1.f, 1.f, 1.f } * specularCoeff;
+            const auto specularColor = half3 { 1.h, 1.h, 1.h } * specularCoeff;
             c += specularColor;
         }
+    }
+    
+    if (sdf > -1.f)
+    {
+        // on edge, -1.f < sdf < 0.f
+        // anti aliasing
+        const half3 colorSample = colorTexture.sample (textureSampler, textureCoordinate).xyz;
+        const half3 color = mix(colorSample, c, half(-sdf));
+        return color;
     }
     
     // debug red
@@ -118,29 +124,13 @@ half3 computeColor(float2 textureCoordinate,
     return c;
 }
 
-#define ENABLE_SUB_SAMPLING 1
-
-/// A Returns color data from the input texture by sampling it at the fragment's
-/// texture coordinates.
 fragment float4 samplingShader(RasterizerData  in           [[stage_in]],
                                texture2d<half> colorTexture [[ texture(RenderTextureBindingIndex) ]],
                                texture2d<half> sdfGradientTexture [[ texture(SDFGradientTextureBindingIndex) ]],
                                constant Uniforms& uniforms  [[ buffer(BufferBindingIndexForUniforms) ]])
 {
-#if ENABLE_SUB_SAMPLING
-    constexpr float kOffset = 1e-4f;
-    
-    const auto p0 = computeColor(in.textureCoordinate, colorTexture, sdfGradientTexture, uniforms);
-    const auto p1 = computeColor(in.textureCoordinate + float2 { kOffset, 0.f }, colorTexture, sdfGradientTexture, uniforms);
-    const auto p2 = computeColor(in.textureCoordinate + float2 { 0.f, kOffset }, colorTexture, sdfGradientTexture, uniforms);
-    const auto p3 = computeColor(in.textureCoordinate + float2 { kOffset, kOffset }, colorTexture, sdfGradientTexture, uniforms);
-    
-    const auto p = (p0 + p1 + p2 + p3) * 0.25f;
-    return float4 { p.r, p.g, p.b, 1.f };
-#else
     const auto c = computeColor(in.textureCoordinate, colorTexture, sdfGradientTexture, uniforms);
     return float4 { c.r, c.g, c.b, 1.f };
-#endif
 }
 
 template <typename TPixel, metal::access TAccess>
